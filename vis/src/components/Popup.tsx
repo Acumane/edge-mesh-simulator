@@ -9,21 +9,21 @@ interface Controller {
 }
 
 interface Popup {
-    controller: Controller | null
-    position: { x: number; y: number }
+    cur: Controller | null
+    pos: { x: number; y: number }
 }
 
-const Popup: Component<Popup> = ({ controller, position }) => {
-    if (!controller) return null
+const Popup: Component<Popup> = ({ cur, pos }) => {
+    if (!cur) return null
 
     return (
         <div id="popup" style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
+            left: `${pos.x}px`,
+            top: `${pos.y}px`,
         }}>
-            <h3 id="popup-title">{controller.name}</h3>
-            <p id="popup-info">IP: {controller.ip}</p>
-            <p id="popup-info">Signal: {controller.signal}</p>
+            <h3 id="popup-title">{cur.name}</h3>
+            <p id="popup-info">IP: {cur.ip}</p>
+            <p id="popup-info">Signal: {cur.signal}</p>
         </div>
     )
 }
