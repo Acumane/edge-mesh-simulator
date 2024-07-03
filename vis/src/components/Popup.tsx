@@ -4,23 +4,23 @@ import { Controller } from "../controllers"
 import "./styles.sass"
 
 interface Popup {
-    controller: Controller | null
-    position: { x: number; y: number }
+    cur: Controller | null
+    pos: { x: number; y: number }
 }
 
-const Popup: Component<Popup> = ({ controller, position }) => {
-    if (!controller) return null
+const Popup: Component<Popup> = ({ cur, pos }) => {
+    if (!cur) return null
 
-    const byStren = Object.entries(controller.hears)
+    const byStren = Object.entries(cur.hears)
         .sort(([, a], [, b]) => b - a);
         
     return (
         <div id="popup" style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
+            left: `${pos.x}px`,
+            top: `${pos.y}px`,
         }}>
-            <h3 id="popup-title">{controller.name}</h3>
-            <p id="popup-info">IP: {controller.ip}</p>
+            <h3 id="popup-title">{cur.name}</h3>
+            <p id="popup-info">IP: {cur.ip}</p>
             <div id="stren">
                 {byStren.map(([key, value]) => (
                     <div id="stren-item" key={key}>
