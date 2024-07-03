@@ -2,7 +2,7 @@ import * as THREE from "three"
 import { camera, cameraControls, factoryVis } from "./setup"
 import { controllerSphereMesh, controllers } from "./controllers"
 import { initPopup, updatePopup } from "./components/Popup"
-import { factoryOpacity, factoryGroup } from "./factory"
+import { factoryOpacity, factoryGroup, OFFSET } from "./factory"
 
 let ray: THREE.Raycaster, mouse: THREE.Vector2
 export let onController: string | null = null,
@@ -32,10 +32,10 @@ export function initInteract() {
 
 function onPopupMouse(event: MouseEvent) {
     if (!onController) return
-    const cur = controllers[onController]
+    const c = controllers[onController]
     const x = event.clientX / (window.innerWidth / 2) - 1,
         y = -event.clientY / (window.innerHeight / 2) + 1
-    const target = new THREE.Vector3(cur.pos.x - 20, cur.pos.z, -cur.pos.y + 10)
+    const target = new THREE.Vector3(c.pos.x - 20, c.pos.z, -c.pos.y + 10)
 
     const spherical = orientOffset!.clone()
     spherical.theta -= x * 1.5 * RAD
@@ -45,7 +45,7 @@ function onPopupMouse(event: MouseEvent) {
 
     cameraControls.setPosition(...adjustCam.toArray(), true)
     cameraControls.setTarget(...target.toArray(), true)
-
+    
     onPopupHover(event)
 }
 
@@ -75,7 +75,7 @@ let orientOffset: THREE.Spherical | null = null
 function showPopup(name: string) {
     if (onController == name) return
     const cur = controllers[name],
-        target = new THREE.Vector3(cur.pos.x - 20, cur.pos.z, -cur.pos.y + 10)
+        target = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(OFFSET)
 
     cameraControls.truck(target.x, target.y, true)
     if (!onController) cameraControls.zoom(camera.zoom * 1.5, true)
@@ -102,7 +102,7 @@ export function hidePopup({ restore = false } = {}) {
 export function updateInteract() {
     if (onController) {
         const cur = controllers[onController],
-            pos = new THREE.Vector3(cur.pos.x - 20, cur.pos.z, -cur.pos.y + 10)
+            pos = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(OFFSET)
         //  (in-place) convert vector from world space -> camera's NDC space. 
         pos.project(camera)
 

@@ -1,6 +1,7 @@
 import * as THREE from "three"
 import axios from "axios"
 import { scene, COL } from "./setup"
+import { OFFSET } from "./factory"
 
 export interface Controller {
     name: string
@@ -44,8 +45,8 @@ export async function loadControllers() {
 }
 
 function setupControllerMesh() {
-    const pointGeometry = new THREE.SphereGeometry(0.2, 10, 10),
-        sphereGeometry = new THREE.SphereGeometry(1.25, 20, 20),
+    const res = 32, pointGeometry = new THREE.SphereGeometry(0.2, res/2, res/2), 
+        sphereGeometry = new THREE.SphereGeometry(1.25, res, res),
         pointMaterial = new THREE.MeshBasicMaterial({ color: COL.node }),
         sphereMaterial = new THREE.MeshBasicMaterial({
             color: COL.blue,
@@ -65,8 +66,8 @@ function setupControllerMesh() {
         index++
     })
 
-    controllerMesh.position.set(-20, 0, 10)
-    controllerSphereMesh.position.set(-20, 0, 10)
+    controllerMesh.position.set(...OFFSET.toArray())
+    controllerSphereMesh.position.set(...OFFSET.toArray())
     controllerMesh.instanceMatrix.needsUpdate = controllerSphereMesh.instanceMatrix.needsUpdate = true
     scene.add(controllerMesh, controllerSphereMesh)
 }
@@ -77,7 +78,7 @@ function setupEdgeMesh() {
     edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
     const edgeMaterial = new THREE.LineBasicMaterial({ color: COL.black })
     edgeMesh = new THREE.LineSegments(edgeGeometry, edgeMaterial)
-    edgeMesh.position.set(-20, 0, 10)
+    edgeMesh.position.set(...OFFSET.toArray())
     scene.add(edgeMesh)
 }
 
