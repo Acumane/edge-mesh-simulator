@@ -5,6 +5,7 @@ import { scene, COL } from "./setup"
 export let factoryGroup: THREE.Group, factoryBorders: THREE.Line
 
 let floor: THREE.Mesh
+export const OFFSET: THREE.Vector3 = new THREE.Vector3(-20, 0, 10)
 export let factorySize: THREE.Vector3 = new THREE.Vector3(),
     center: THREE.Vector3 = new THREE.Vector3(),
     boundingBox: THREE.Box3
@@ -43,7 +44,8 @@ function makeFactoryBorder() {
     factoryBorders.computeLineDistances()
     factoryBorders.applyMatrix4(tempBox.matrix)
     factoryBorders.visible = false
-    factoryBorders.position.set(-20, 0, 10)
+    factoryBorders.position.set(...OFFSET.toArray())
+
     return factoryBorders
 }
 
@@ -53,7 +55,7 @@ function updateFactoryGroup() {
             child.castShadow = true
         }
     })
-    factoryGroup.position.set(-20, 0, 10)
+    factoryGroup.position.set(...OFFSET.toArray())
 }
 
 export function factoryOpacity(opacity: number) {
@@ -83,8 +85,7 @@ function makeFloor(border = 4) {
     })
     floor = new THREE.Mesh(floorGeom, floorMat)
     floor.position.set(center.x, -0.001, center.z)
-    floor.rotation.x = -Math.PI / 2
-    floor.rotation.z = Math.PI / 2
+    floor.rotation.x = -(floor.rotation.z = Math.PI / 2)
     floor.receiveShadow = true
     return floor
 }

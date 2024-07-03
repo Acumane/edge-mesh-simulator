@@ -25,6 +25,8 @@ Run with:
 
 <kbd>W</kbd>,<kbd>A</kbd>,<kbd>S</kbd>,<kbd>D</kbd> / arrow keys - pan
 
+<kbd>Q</kbd>,<kbd>E</kbd> - orbit
+
 Mouse - orbit/pan/zoom
 
 </td></tr></table>
