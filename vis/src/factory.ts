@@ -19,6 +19,13 @@ export function loadFactory(): Promise<void> {
             sceneUrl,
             (gltf: any) => {
                 factoryGroup = gltf.scene
+                factoryGroup.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        child.material = new THREE.MeshStandardMaterial({ vertexColors: true })
+                        child.receiveShadow = true
+                    }
+                })
+
                 scene.add(makeFactoryBorder())
                 updateFactoryGroup()
                 makeBoundingBox()
@@ -28,7 +35,7 @@ export function loadFactory(): Promise<void> {
             },
             undefined,
             (error: any) => {
-                console.error("Failed do load GLTF model:", error)
+                console.error("Failed to load GLTF model:", error)
                 reject(error)
             }
         )
@@ -81,10 +88,7 @@ function makeFloor(border = 4) {
     const width = factorySize.z + border,
         height = factorySize.x + border
     const floorGeom = new THREE.PlaneGeometry(width, height, width, height)
-    const floorMat = new THREE.MeshStandardMaterial({
-        color: COL.floor,
-        side: THREE.DoubleSide
-    })
+    const floorMat = new THREE.MeshStandardMaterial({ color: COL.floor, side: THREE.DoubleSide })
     floor = new THREE.Mesh(floorGeom, floorMat)
     floor.position.set(center.x, -0.001, center.z)
     floor.rotation.x = -(floor.rotation.z = Math.PI / 2)
