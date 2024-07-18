@@ -3,13 +3,13 @@ import axios from "axios"
 import { scene, COL } from "./setup"
 import { OFFSET } from "./factory"
 
-interface Controller {
+export interface Controller {
     name: string
     comm: string
     pos: { x: number; y: number; z: number }
     orient: { roll: number; pitch: number; yaw: number }
     ip: string
-    signal: number
+    hears: { [key: string]: number }
 }
 
 export let controllers: { [key: string]: Controller } = {}
@@ -27,7 +27,7 @@ async function getControllers(): Promise<{ [key: string]: Controller }> {
                 pos: item.pos,
                 orient: item.orient,
                 ip: item.ip,
-                signal: item.signal
+                hears: item.hears
             }
             return acc
         }, {})

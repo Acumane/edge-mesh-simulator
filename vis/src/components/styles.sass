@@ -1,43 +1,91 @@
+$full: #33D17A
+$bar: #BBB
+$dim: #666
+$ease: ease-in-out
+
 #popup
-	position: fixed
+	position: absolute
 	background: white
 	padding: 20px
 	margin: 10px
 	border-radius: 15px
 	box-shadow: 0 2px 20px rgba(0, 0, 0, 0.25)
 	white-space: nowrap
-	pointer-events: none
+	min-height: 10px
 
 	&-title
-		margin: 0 0 10px
+		margin: 8px
 
 	&-info
 		margin: 5px 0
 		font-size: smaller
-		color: #666
+		color: $dim
 
-#progress
+#popup-title, #popup-info
+	margin-bottom: 10px
+
+#stren
+	max-height: 250px 
+	overflow-y: scroll
+	padding-left: 20px
+	padding-right: 10px
+
+	&-item
+		display: flex
+		align-items: center
+		margin-bottom: 5px
+
+	&-perc
+		min-width: 100px
+
+	&-bar
+		width: 100px
+		height: 10px
+		background: $bar
+		margin-left: 10px
+		border-radius: 5px
+		overflow: hidden
+
+	&-bar-fill
+		height: 100%
+		background: $full
+		border-radius: 5px
+
+.progress
+	background: white
 	position: fixed
-	padding: 10px
-	border-radius: 5px
-	transform: translate(-50%, -50%)
-	top: 50%
-	left: 50%
-	width: 400px
+	inset: 0
+	display: flex
+	justify-content: center // vertical
+	align-items: center // horizonal
+	flex-direction: column
+
+	&-container
+		margin-bottom: 40px
+		width: 15vw
+		&:last-child
+			margin-bottom: 0
 
 	&-label
-		margin-bottom: 5px
+		margin-bottom: 10px
 		text-align: center
-		font-size: 14px
+		&.idle
+			color: $dim
 
-	&-div
-		width: 100%
-		background-color: #DDD
-		height: 20px
+
+	&-bar
+		height: 12px
 		border-radius: 10px
 		overflow: hidden
 
+
 	&-fill
 		height: 100%
-		background-color: #33D17A
-		transition: width 0.3s ease-in-out
+		background: $bar
+		border-radius: 10px
+
+		transition: width $ease, background $ease
+		transition-duration: 0.2s
+
+		&.complete
+			background: $full
