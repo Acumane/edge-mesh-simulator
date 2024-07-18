@@ -68,24 +68,27 @@ export function orientCamera({ view = "" } = {}) {
 
 export function initLights() {
     scene.background = COL.bg
-    scene.add(new THREE.AmbientLight(COL.light, 0.8))
 
-    const mainLight = new THREE.DirectionalLight(COL.white, 2.0)
-    mainLight.position.set(-0, 200, 25)
+    const ambient = new THREE.HemisphereLight(COL.light, COL.floor, 0.6)
+    scene.add(ambient)
+
+    const mainLight = new THREE.DirectionalLight(COL.white, 1)
+    mainLight.position.set(100, 200, -100)
+
     mainLight.castShadow = true
-    mainLight.shadow.mapSize.set(512, 512)
+    mainLight.shadow.mapSize.set(2048, 2048)
 
     mainLight.shadow.camera.bottom = -(mainLight.shadow.camera.top = factorySize.z)
     mainLight.shadow.camera.right = -(mainLight.shadow.camera.left = factorySize.x)
     scene.add(mainLight)
 
-    const fillLight = new THREE.DirectionalLight(new THREE.Color(COL.light), 0.5)
+    const fillLight = new THREE.DirectionalLight(new THREE.Color(COL.light), 1.0)
     fillLight.position.set(-50, 75, -50)
     scene.add(fillLight)
 
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.BasicShadowMap
-    mainLight.shadow.bias = -0.005
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    mainLight.shadow.bias = -0.001
 }
 
 export function initKeybinds() {
