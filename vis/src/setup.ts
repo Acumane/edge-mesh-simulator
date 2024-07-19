@@ -3,6 +3,7 @@ import CameraControls from "camera-controls"
 import { KeyboardKeyHold as KHold } from "hold-event"
 import { factoryBorders, factoryOpacity, factorySize, center } from "./factory"
 import { onController, hidePopup } from "./interact"
+import { threshold } from "./edges"
 
 CameraControls.install({ THREE: THREE })
 
@@ -109,7 +110,9 @@ export function initKeybinds() {
         sKey = new KHold(KEYCODE.S, 10),
         dKey = new KHold(KEYCODE.D, 10),
         qKey = new KHold(KEYCODE.Q, 10),
-        eKey = new KHold(KEYCODE.E, 10)
+        eKey = new KHold(KEYCODE.E, 10),
+        LBKey = new KHold(219, 50), // [
+        RBKey = new KHold(221, 50) // ]
 
     aKey.addEventListener("holding", (event: any) => {
         cameraControls.truck(-0.05 * event.deltaTime, 0, true)
@@ -144,6 +147,8 @@ export function initKeybinds() {
     rightKey.addEventListener("holding", orbitRight)
     qKey.addEventListener("holding", orbitLeft)
     eKey.addEventListener("holding", orbitRight)
+    LBKey.addEventListener("holding", threshold(-5))
+    RBKey.addEventListener("holding", threshold(5))
 
     const rKey = new KHold(KEYCODE.R, 10),
         vKey = new KHold(KEYCODE.V, 10),
