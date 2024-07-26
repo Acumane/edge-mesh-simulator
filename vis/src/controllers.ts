@@ -66,8 +66,8 @@ function setupControllerMesh() {
         index++
     })
 
-    controllerMesh.position.set(...OFFSET.toArray())
-    controllerSphereMesh.position.set(...OFFSET.toArray())
+    controllerMesh.position.set(...OFFSET)
+    controllerSphereMesh.position.set(...OFFSET)
     controllerMesh.instanceMatrix.needsUpdate = controllerSphereMesh.instanceMatrix.needsUpdate = true
     scene.add(controllerMesh, controllerSphereMesh)
 }
@@ -78,7 +78,7 @@ function setupEdgeMesh() {
     edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
     const edgeMaterial = new THREE.LineBasicMaterial({ color: COL.black })
     edgeMesh = new THREE.LineSegments(edgeGeometry, edgeMaterial)
-    edgeMesh.position.set(...OFFSET.toArray())
+    edgeMesh.position.set(...OFFSET)
     scene.add(edgeMesh)
 }
 
