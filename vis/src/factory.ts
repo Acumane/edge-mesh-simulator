@@ -2,10 +2,10 @@ import * as THREE from "three"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { scene, COL } from "./setup"
 
-export let factoryGroup: THREE.Group, factoryBorders: THREE.Line
+export let factoryGroup: THREE.Group
 
 let floor: THREE.Mesh
-export const OFFSET: THREE.Vector3 = new THREE.Vector3(-20, 0, 10)
+export const OFFSET: THREE.Vector3Tuple = [-20, 0, 10]
 export let factorySize: THREE.Vector3 = new THREE.Vector3(),
     center: THREE.Vector3 = new THREE.Vector3(),
     boundingBox: THREE.Box3
@@ -22,11 +22,11 @@ export function loadFactory(): Promise<void> {
                 factoryGroup.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.material = new THREE.MeshStandardMaterial({ vertexColors: true })
+                        child.material.needsUpdate = true
                         child.receiveShadow = true
                     }
                 })
 
-                scene.add(makeFactoryBorder())
                 updateFactoryGroup()
                 makeBoundingBox()
                 scene.add(factoryGroup)
@@ -42,33 +42,18 @@ export function loadFactory(): Promise<void> {
     })
 }
 
-function makeFactoryBorder() {
-    const tempBox = new THREE.BoxHelper(factoryGroup, COL.white)
-    factoryBorders = new THREE.Line(
-        tempBox.geometry.toNonIndexed(),
-        new THREE.LineDashedMaterial({ color: COL.white, dashSize: 1, gapSize: 0.5 })
-    )
-    factoryBorders.computeLineDistances()
-    factoryBorders.applyMatrix4(tempBox.matrix)
-    factoryBorders.visible = false
-    factoryBorders.position.set(...OFFSET.toArray())
-
-    return factoryBorders
-}
-
 function updateFactoryGroup() {
     factoryGroup.traverse((child: any) => {
         if (child instanceof THREE.Mesh) {
+            child.material.transparent = true
             child.castShadow = true
         }
     })
-    factoryGroup.position.set(-20, 0, 10)
+    factoryGroup.position.set(...OFFSET)
     factoryGroup.rotation.x = -Math.PI / 2
-    factoryGroup.position.set(...OFFSET.toArray())
 }
 
 export function factoryOpacity(opacity: number) {
-    ;(floor.material as THREE.Material).transparent = opacity < 1
     ;(floor.material as THREE.Material).opacity = opacity
     factoryGroup.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
@@ -92,6 +77,7 @@ function makeFloor(border = 4) {
     floor = new THREE.Mesh(floorGeom, floorMat)
     floor.position.set(center.x, -0.001, center.z)
     floor.rotation.x = -(floor.rotation.z = Math.PI / 2)
+    ;(floor.material as THREE.Material).transparent = true
     floor.receiveShadow = true
     return floor
 }

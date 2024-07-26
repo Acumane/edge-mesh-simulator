@@ -8,7 +8,8 @@ let ray: THREE.Raycaster, mouse: THREE.Vector2
 export let onController: string | null = null,
     overPopup: boolean = false
 
-const RAD = Math.PI / 180
+const RAD = Math.PI / 180,
+    offset = new THREE.Vector3(...OFFSET)
 
 export function initInteract() {
     initPopup()
@@ -65,7 +66,8 @@ function checkIntersect(event: MouseEvent) {
     let occluded = ray.intersectObject(factoryGroup, true),
         intersects = ray.intersectObject(controllerSphereMesh)
     if (intersects.length > 0) {
-        if (occluded.length > 0 && occluded[0].distance < intersects[0].distance) factoryOpacity(0.2)
+        if (occluded.length > 0 && occluded[0].distance < intersects[0].distance && factoryVis == 1)
+            factoryOpacity(0.2)
         return intersects.length > 0 ? intersects[0] : false
     } else return false
 }
@@ -75,7 +77,7 @@ let orientOffset: THREE.Spherical | null = null
 function showPopup(name: string) {
     if (onController == name) return
     const cur = controllers[name],
-        target = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(OFFSET)
+        target = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(offset)
 
     cameraControls.truck(target.x, target.y, true)
     if (!onController) cameraControls.zoom(camera.zoom * 1.5, true)
@@ -102,7 +104,7 @@ export function hidePopup({ restore = false } = {}) {
 export function updateInteract() {
     if (onController) {
         const cur = controllers[onController],
-            pos = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(OFFSET)
+            pos = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(offset)
         //  (in-place) convert vector from world space -> camera's NDC space. 
         pos.project(camera)
 

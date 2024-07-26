@@ -1,4 +1,5 @@
 import * as THREE from "three"
+import Stats from "three/examples/jsm/libs/stats.module"
 import { initCamera, initLights, initKeybinds, orientCamera } from "./setup"
 import { scene, renderer, camera, cameraControls } from "./setup"
 import { loadFactory } from "./factory"
@@ -7,11 +8,14 @@ import { initSplash, updateProgress, removeSplash } from "./components/Progress"
 import { initInteract, updateInteract } from "./interact"
 import { initEdges, updateEdges } from "./edges"
 
+const stats = new Stats()
+document.body.appendChild(stats.dom)
 const clock = new THREE.Clock(),
     URL = "http://localhost:8001"
 
 function animate() {
     requestAnimationFrame(animate)
+    stats.update()
     const delta = clock.getDelta()
     updateControllers()
     updateEdges()

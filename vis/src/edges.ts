@@ -5,7 +5,7 @@ import { scene } from "./setup"
 
 const MAX_VERT = 10000
 let lineMesh: THREE.LineSegments
-let edgeThreshold = 66
+let edgeThreshold = 75
 
 const strenCol: { [key: number]: THREE.Color } = {
     100: new THREE.Color(0x00ff00),
@@ -25,7 +25,7 @@ export function initEdges() {
 
     const material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true })
     lineMesh = new THREE.LineSegments(geometry, material)
-    lineMesh.position.set(...OFFSET.toArray())
+    lineMesh.position.set(...OFFSET)
     lineMesh.frustumCulled = false
     scene.add(lineMesh)
 }
@@ -33,8 +33,9 @@ export function initEdges() {
 export function updateEdges() {
     const { position, color } = lineMesh.geometry.attributes,
         cVals = Object.values(controllers)
-    let lines = 0
+        let lines = 0
 
+    position.array.fill(0)
     for (let a = 0; a < cVals.length && lines < MAX_VERT; a++) {
         for (let b = a + 1; b < cVals.length && lines < MAX_VERT; b++) {
             const stren = Math.min(cVals[a].hears[cVals[b].name], cVals[b].hears[cVals[a].name])

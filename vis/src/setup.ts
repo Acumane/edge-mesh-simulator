@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import CameraControls from "camera-controls"
 import { KeyboardKeyHold as KHold } from "hold-event"
-import { factoryBorders, factoryOpacity, factorySize, center } from "./factory"
+import { factoryOpacity, factorySize, center } from "./factory"
 import { onController, hidePopup } from "./interact"
 import { threshold } from "./edges"
 
@@ -94,76 +94,67 @@ export function initLights() {
 
 export function initKeybinds() {
     // prettier-ignore
-    const KEYCODE = {
+    const KEY = {
         W: 87, A: 65, S: 83, D: 68,
         ARROW_LEFT: 37, ARROW_UP: 38, ARROW_RIGHT: 39, ARROW_DOWN: 40,
-        R: 82,
-        V: 86,
-        B: 66,
-        T: 84,
-        Q: 81,
-        E: 69
+        R: 82, V: 86, B: 66, T: 84, Q: 81, E: 69, LB: 219, RB: 221
     }
 
-    const wKey = new KHold(KEYCODE.W, 10),
-        aKey = new KHold(KEYCODE.A, 10),
-        sKey = new KHold(KEYCODE.S, 10),
-        dKey = new KHold(KEYCODE.D, 10),
-        qKey = new KHold(KEYCODE.Q, 10),
-        eKey = new KHold(KEYCODE.E, 10),
-        LBKey = new KHold(219, 50), // [
-        RBKey = new KHold(221, 50) // ]
+    const wKey = new KHold(KEY.W, 10),
+        aKey = new KHold(KEY.A, 10),
+        sKey = new KHold(KEY.S, 10),
+        dKey = new KHold(KEY.D, 10),
+        qKey = new KHold(KEY.Q, 10),
+        eKey = new KHold(KEY.E, 10),
+        LBKey = new KHold(KEY.LB, 40), // [
+        RBKey = new KHold(KEY.RB, 40), // ]
+        leftKey = new KHold(KEY.ARROW_LEFT, 100),
+        rightKey = new KHold(KEY.ARROW_RIGHT, 100),
+        upKey = new KHold(KEY.ARROW_UP, 100),
+        downKey = new KHold(KEY.ARROW_DOWN, 100)
 
     aKey.addEventListener("holding", (event: any) => {
-        cameraControls.truck(-0.05 * event.deltaTime, 0, true)
+        cameraControls.truck(-0.1 * event.deltaTime, 0, true)
     })
     dKey.addEventListener("holding", (event: any) => {
-        cameraControls.truck(0.05 * event.deltaTime, 0, true)
+        cameraControls.truck(0.1 * event.deltaTime, 0, true)
     })
     wKey.addEventListener("holding", (event: any) => {
-        cameraControls.forward(0.05 * event.deltaTime, true)
+        cameraControls.forward(0.1 * event.deltaTime, true)
     })
     sKey.addEventListener("holding", (event: any) => {
-        cameraControls.forward(-0.05 * event.deltaTime, true)
+        cameraControls.forward(-0.1 * event.deltaTime, true)
     })
 
-    const leftKey = new KHold(KEYCODE.ARROW_LEFT, 100),
-        rightKey = new KHold(KEYCODE.ARROW_RIGHT, 100),
-        upKey = new KHold(KEYCODE.ARROW_UP, 100),
-        downKey = new KHold(KEYCODE.ARROW_DOWN, 100)
     upKey.addEventListener("holding", (event: any) => {
         cameraControls.rotate(0, -0.05 * THREE.MathUtils.DEG2RAD * event.deltaTime, true)
     })
     downKey.addEventListener("holding", (event: any) => {
         cameraControls.rotate(0, 0.05 * THREE.MathUtils.DEG2RAD * event.deltaTime, true)
     })
-    function orbitLeft(event: any) {
-        cameraControls.rotate(-0.1 * THREE.MathUtils.DEG2RAD * event.deltaTime, 0, true)
+    function orbit(dir: string) {
+        return (event: any) => {
+            const sign = (dir == "left" ? -1 : 1)
+            cameraControls.rotate(sign*0.1 * THREE.MathUtils.DEG2RAD * event.deltaTime, 0, true)
+        }
     }
-    function orbitRight(event: any) {
-        cameraControls.rotate(0.1 * THREE.MathUtils.DEG2RAD * event.deltaTime, 0, true)
-    }
-    leftKey.addEventListener("holding", orbitLeft)
-    rightKey.addEventListener("holding", orbitRight)
-    qKey.addEventListener("holding", orbitLeft)
-    eKey.addEventListener("holding", orbitRight)
+    leftKey.addEventListener("holding", orbit("left"))
+    rightKey.addEventListener("holding", orbit("right"))
+    qKey.addEventListener("holding", orbit("left"))
+    eKey.addEventListener("holding", orbit("right"))
     LBKey.addEventListener("holding", threshold(-5))
     RBKey.addEventListener("holding", threshold(5))
 
-    const rKey = new KHold(KEYCODE.R, 10),
-        vKey = new KHold(KEYCODE.V, 10),
-        bKey = new KHold(KEYCODE.B, 10),
-        tKey = new KHold(KEYCODE.T, 10)
+    const rKey = new KHold(KEY.R, 10),
+        vKey = new KHold(KEY.V, 10),
+        tKey = new KHold(KEY.T, 10)
     rKey.addEventListener("holdStart", () => {
         if (onController) hidePopup()
         orientCamera({ view: "default" })
     })
-    vKey.addEventListener("holdEnd", () => {
+    vKey.addEventListener("holdStart", () => {
         factoryVis = factoryVis === 1 ? 0.1 : 1
         factoryOpacity(factoryVis)
-    })
-    bKey.addEventListener("holdEnd", () => {
-        factoryBorders.visible = !factoryBorders.visible
     })
     tKey.addEventListener("holdStart", () => {
         if (onController) hidePopup()

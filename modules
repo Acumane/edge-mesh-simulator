@@ -11,3 +11,4 @@ uvicorn
 toml
 sortedcontainers
 pygraphviz
+trimesh
