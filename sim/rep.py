@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from scipy.stats import qmc
 import matplotlib.pyplot as plot
 from matplotlib.colors import ListedColormap
+from collections import defaultdict as dDict
 from functools import partial
 
 """
@@ -90,6 +91,40 @@ class Controller:
             "hears": self.hears
         }
 
+@define
+class StateTracker:
+    instances: Dict[str, Controller] = field(factory=dict)
+    hist: Dict[str, Dict[int, Dict]] = field(factory=lambda: dDict(lambda: dDict(dict)))
+    cur: int = 0
+
+    def add(self, instance: Controller):
+        if instance.name in self.instances:
+            raise ValueError(f"Controller with name '{instance.name}' already exists.")
+        self.instances[instance.name] = instance
+
+    def tick(self):
+        self.cur += 1
+        for name, instance in self.instances.items():
+            state, changes = instance.toJson(), {}
+            for key, value in state.items():
+                if key not in self.hist[name] \
+                or self.hist[name][key].get(self.cur - 1, None) != value:
+                    changes[key] = value
+            if changes: self.hist[name][self.cur] = changes
+
+    def getState(self, name: str, tick: int) -> Dict:
+        state = {}
+        for t in range(tick + 1): state.update(self.hist[name][t])
+        return state
+
+    def update(self, name: str, **kwargs):
+        instance = self.instances[name]
+        for key, value in kwargs.items():
+            if hasattr(instance, key): setattr(instance, key, value)
+
+    def getStates(self, tick: int) -> List[Dict]:
+        return [self.getState(name, tick) for name in self.instances]
+
 KINDS = {
     0: "empty",
     1: "shelf",
@@ -170,9 +205,9 @@ def _makeNodes(chunk: Chunk, x, y, node: bool):
         if type(free) is tuple: pitch = uniform(90, 180)
 
         name = f"C{_makeNodes.nth:0{len(str(_maxN))}d}"
-        MESH[name] = Controller(
-            name, globals()[TYPE](), Coord(x, y, z), Rot(pitch, yaw, roll),
-        ) # type: ignore
+        STATE.add(
+            Controller(name, globals()[TYPE](), Coord(x, y, z), Rot(pitch, yaw, roll),
+        )) # type: ignore
         _makeNodes.nth += 1
         chunk.nodes.append(name)
 
@@ -213,7 +248,7 @@ def _showFig(kinds):
 
 H = 20
 TYPE: str = ""
-MESH: Dict[str, Controller] = {}
+STATE: StateTracker = StateTracker()
 SCENE: Grid[Chunk]; _chunks: Grid[Chunk]; heights: Grid[int]; cloud: Volume[int]
 
 def init(kinds: Grid[int], nodes: Grid[bool], show=False):

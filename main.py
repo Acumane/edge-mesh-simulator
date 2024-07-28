@@ -29,7 +29,8 @@ class Timer:
 
 progress = {
     "signal": {"value": 0.0, "step": "Waiting for nodes"},
-    "build":  {"value": 0.0, "step": "Initializing"}
+    "build":  {"value": 0.0, "step": "Initializing"},
+    "lifetime": {"tick": 0, "end": config.get("ticks", 50)}
 }
 timer = Timer()
 
@@ -40,10 +41,10 @@ def updateProgress(task, value, step=None, log=True):
         progress[task]["step"] = step
         if log: print(f"[bright_yellow][{timer}][/]  {step}")
 
-def main(width=60, depth=80, n_nodes=None, comm_type="BLE"):
+def main(args):
     global W, D
-    W, D = width, depth
-    rep.TYPE = comm_type
+    W, D = args.get("width", 150), args.get("depth", 200)
+    rep.TYPE = args.get("comm", "BLE")
     plot.rcParams["toolbar"] = "None"
 
     updateProgress("build", 0.0, "Generating layout")
@@ -54,7 +55,7 @@ def main(width=60, depth=80, n_nodes=None, comm_type="BLE"):
         kinds: Grid = features(W, D, regions, FREQ)  # place features
 
         updateProgress("build", 0.1, "Scattering nodes")
-        nodes: Grid = rep.genPoints(W, D, n=n_nodes)  # scatter nodes
+        nodes: Grid = rep.genPoints(W, D)  # scatter nodes
         plot.close()
 
         updateProgress("build", 0.15, "Creating internal representation")
@@ -68,22 +69,36 @@ def main(width=60, depth=80, n_nodes=None, comm_type="BLE"):
 
         def runSigStren():
             callback = lambda v, s=None, log=True: updateProgress("signal", v, s, log)
-            sigStren(rep.cloud, rep.MESH, callback)
+            sigStren(rep.cloud, rep.STATE.instances, callback)
 
         with ThreadPoolExecutor() as executor:
             executor.submit(runBuild)
             executor.submit(runSigStren)
+
+        lifetime()
 
     except Exception as e:
         print(f"[bright_red][{timer}]  ERROR: {e}[/]", file=stderr)
     finally:
         plot.close()
 
+def lifetime():
+    global progress
+    end = progress["lifetime"]["end"]
+
+    for tick in range(end + 1):
+        progress["lifetime"]["tick"] = tick
+
+        callback = lambda v, s=None, log=False: updateProgress("signal", v, s, log)
+        sigStren(rep.cloud, rep.STATE.instances, callback)
+        rep.STATE.tick()
+
+        print(f"Tick: {tick}/{end}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    kwargs = {k: config[k] for k in ["width", "depth", "nodes", "comm"] if k in config}
-    Thread(target=main, kwargs=kwargs).start()
-    app.MESH = rep.MESH  # type: ignore
+    Thread(target=main, args=[config]).start()
+    app.STATE = rep.STATE  # type: ignore
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -110,7 +125,7 @@ def getRoot():
 
 @app.get("/controllers")
 async def controllers():
-    return [x.toJson() for x in app.MESH.values()]  # type: ignore
+    return app.STATE.getStates(app.STATE.cur)  # type: ignore
 
 if __name__ == "__main__":
     run("__main__:app", host="localhost", port=8001, reload=False, log_level="critical")
