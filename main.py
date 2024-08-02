@@ -75,7 +75,7 @@ def main(args):
             executor.submit(runBuild)
             executor.submit(runSigStren)
 
-        lifetime()
+        # lifetime()
 
     except Exception as e:
         print(f"[bright_red][{timer}]  ERROR: {e}[/]", file=stderr)
@@ -89,7 +89,7 @@ def lifetime():
     for tick in range(end + 1):
         progress["lifetime"]["tick"] = tick
 
-        callback = lambda v, s=None, log=False: updateProgress("signal", v, s, log)
+        callback = lambda v, s=None, log=False: updateProgress("signal", 1, s, False)
         sigStren(rep.cloud, rep.STATE.instances, callback)
         rep.STATE.tick()
 

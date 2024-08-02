@@ -101,6 +101,7 @@ class StateTracker:
         if instance.name in self.instances:
             raise ValueError(f"Controller with name '{instance.name}' already exists.")
         self.instances[instance.name] = instance
+        self.hist[instance.name][0] = instance.toJson()
 
     def tick(self):
         self.cur += 1
