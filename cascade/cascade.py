@@ -3,11 +3,11 @@ from typing import Callable, Dict, List
 import os
 import heapq
 from dataclasses import dataclass
-from dgraph import DGraph
+from .dgraph import DGraph
+from .perf import PerfEval
 from attrs import define, field, Factory as new
 import pickle
 import random
-from perf import PerfEval
 """
 Cascade shortest path implementation; supports importing or randomly generating graph
 (see dgraph.py for options)
@@ -215,12 +215,12 @@ class Cascade:
 if __name__ == "__main__":
     # Create an instance of Cascade
     c = Cascade()
-    val = 100
+    val = 1
     for i in range(val):
         random.seed(i)
         os.system("clear")
         c.clear()
-        c.gen(seed=i)
+        c.gen(n=40,seed=i)
         c.dijkstra(0)
         c.perfClear()
         c.randUpdate(10, ["add", "mod","rem"])
