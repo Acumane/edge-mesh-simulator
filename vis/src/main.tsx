@@ -1,3 +1,5 @@
+import React, { useEffect, useRef } from "react"
+import ReactDOM from "react-dom/client"
 import * as THREE from "three"
 import Stats from "three/examples/jsm/libs/stats.module"
 import { initCamera, initLights, initKeybinds, orientCamera } from "./setup"
@@ -8,9 +10,8 @@ import { initSplash, updateProgress, removeSplash } from "./components/Progress"
 import { initInteract, updateInteract } from "./interact"
 import { initEdges, updateEdges } from "./edges"
 
-const stats = new Stats()
-document.body.appendChild(stats.dom)
-const clock = new THREE.Clock(),
+const stats = new Stats(),
+    clock = new THREE.Clock(),
     URL = "http://localhost:8001"
 
 function animate() {
@@ -32,19 +33,21 @@ async function buildProgress(): Promise<void> {
         initSplash()
         function getProgress() {
             getData().then((data) => {
-                    updateProgress(data.build, data.signal)
+                updateProgress(data.build, data.signal)
 
-                    if (data.build.value < 1.0 || data.signal.value < 1.0) {
-                        requestAnimationFrame(getProgress)
-                    }
-                    else resolve()
-                })
+                if (data.build.value < 1.0 || data.signal.value < 1.0) {
+                    requestAnimationFrame(getProgress)
+                } else resolve()
+            })
         }
         getProgress()
     })
 }
 
-export async function init() {
+async function init() {
+    const canvas = document.getElementById("canvas")!
+    canvas.append(stats.dom, renderer.domElement)
+
     initCamera()
     initKeybinds()
     initInteract()
@@ -59,4 +62,19 @@ export async function init() {
     animate()
 }
 
-init()
+const App = () => {
+    const ready = useRef(false)
+    useEffect(() => { // TODO: timing?
+        if (!ready.current) { init(); ready.current = true }
+    }, [])
+    return <div id="canvas"></div>
+}
+
+const Provider = ({ children }: { children: React.ReactNode }) => children // WIP 
+ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+        <Provider>
+            <App />
+        </Provider>
+    </React.StrictMode>
+)
