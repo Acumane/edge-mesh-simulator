@@ -1,8 +1,9 @@
 from math import inf, dist
 from typing import *
 from numpy import sign
-from contextlib import suppress
 from .rep import KINDS
+from contextlib import suppress
+from joblib import Parallel, delayed
 
 def occlusion(start, end, cloud):
     ray = dist(start, end)
@@ -44,21 +45,28 @@ density = {
 
 MAX_STREN = 100
 
+# +~2s: cost of creating thread pool (WIP)
+def signal(cA, cB, cloud):
+    if dist(cA.pos, cB.pos) > MAX_STREN: return None
+
+    obstacles = occlusion(cA.pos, cB.pos, cloud)
+    loss = sum(density[KINDS[o[0]]]*o[1] for o in obstacles)
+
+    if loss > MAX_STREN: return None
+    return (cA.name, cB.name, MAX_STREN - loss)
+
 def sigStren(cloud, mesh, callback):
     callback(0.0, "Determining signal strength")
-    cur, total = 0, len(mesh)
+    mesh_items = list(mesh.values())
 
-    for cA in mesh.values():
-        cur += 1
-        for cB in mesh.values():
-            if cA.name >= cB.name: continue
-            if dist(cA.pos, cB.pos) > MAX_STREN: continue
-            obstacles = occlusion(cA.pos, cB.pos, cloud)
-            loss = sum(density[KINDS[o[0]]]*o[1] for o in obstacles)
-            if loss > MAX_STREN: continue
-            strength = MAX_STREN - loss
+    connections = Parallel(n_jobs=-1)(
+        delayed(signal)(cA, cB, cloud)
+        for i, cA in enumerate(mesh_items)
+        for cB in mesh_items[i+1:]
+    )
 
-            cA.hears[cB.name] = cB.hears[cA.name] = strength
+    for conn in filter(None, connections):
+        cA_name, cB_name, strength = conn
+        mesh[cA_name].hears[cB_name] = mesh[cB_name].hears[cA_name] = strength
 
-        callback(cur / total)
     callback(1.0, "Connections made", log=False)
