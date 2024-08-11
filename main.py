@@ -11,7 +11,7 @@ from os import getcwd as cwd, path, mkdir
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import time
 from rich import print
 from sys import stderr
@@ -87,13 +87,15 @@ def main():
             sigStren(rep.cloud, rep.STATE.instances, callback)
 
         with ThreadPoolExecutor() as executor:
-            executor.submit(runBuild)
-            executor.submit(runSigStren)
+            futures = executor.submit(runBuild), executor.submit(runSigStren)
+            for future in as_completed(futures):
+                try: future.result()
+                except Exception: raise
 
         lifetime()
 
     except Exception as e:
-        print(f"[bright_red][{timer}]  ERROR: {e}[/]", file=stderr)
+        print(f"[bright_red][{timer}]  ERROR:[/] {e}", file=stderr)
     finally:
         plot.close()
 
