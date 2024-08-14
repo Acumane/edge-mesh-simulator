@@ -37,15 +37,35 @@ async function getControllers(): Promise<{ [key: string]: Controller }> {
     }
 }
 
-export async function loadControllers() {
-    controllers = await getControllers()
+async function sendControllers(data: any): Promise<{ [key: string]: Controller }> {
+    try {
+        return data.reduce((acc: { [key: string]: Controller }, item: any) => {
+            acc[item.name] = {
+                name: item.name,
+                comm: item.comm,
+                pos: item.pos,
+                orient: item.orient,
+                ip: item.ip,
+                hears: item.hears
+            }
+            return acc
+        }, {})
+    } catch (error) {
+        console.error("Error fetching data:", error)
+        return {}
+    }
+}
+
+export async function loadControllers(data: any) {
+    controllers = await sendControllers(data)
     setupControllerMesh()
     setupEdgeMesh()
     updateControllers()
 }
 
 function setupControllerMesh() {
-    const res = 32, pointGeometry = new THREE.SphereGeometry(0.2, res/2, res/2), 
+    const res = 32,
+        pointGeometry = new THREE.SphereGeometry(0.2, res / 2, res / 2),
         sphereGeometry = new THREE.SphereGeometry(1.25, res, res),
         pointMaterial = new THREE.MeshBasicMaterial({ color: COL.node }),
         sphereMaterial = new THREE.MeshBasicMaterial({

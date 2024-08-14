@@ -9,6 +9,10 @@ scipy
 fastapi
 uvicorn
 toml
-sortedcontainers
 pygraphviz
 trimesh
+pika
+python-dotenv
+requests
+joblib
+amqpstorm

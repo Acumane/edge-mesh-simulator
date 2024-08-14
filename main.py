@@ -1,3 +1,4 @@
+import uuid
 from gen.proc import *
 from gen.place import *
 from sim.signal import *
@@ -16,9 +17,10 @@ from rich import print
 from sys import stderr
 from threading import Thread
 from uvicorn import run
-import toml
-
-config = toml.load("config.toml")
+from config import WIDTH, DEPTH, TICKS, COMM, MQ_URI, MQ_LOGS
+from amqpstorm import Connection, Channel
+from amqpstorm import AMQPChannelError, AMQPMessageError
+import json
 
 @define
 class Timer:
@@ -28,23 +30,36 @@ class Timer:
         return f"{time() - self._start:.2f}s"
 
 progress = {
-    "signal": {"value": 0.0, "step": "Waiting for nodes"},
-    "build":  {"value": 0.0, "step": "Initializing"},
-    "lifetime": {"tick": 0, "end": config.get("ticks", 50)}
+    "signal": {
+    "value": 0.0,
+    "step": "Waiting for nodes"
+    },
+    "build": {
+    "value": 0.0,
+    "step": "Initializing"
+    },
+    "lifetime": {
+    "tick": 0,
+    "end": TICKS
+    }
 }
+mq_key = ""
 timer = Timer()
+connection: Connection
+channel: Channel
 
 def updateProgress(task, value, step=None, log=True):
     global progress
     progress[task]["value"] = value
     if step:
         progress[task]["step"] = step
+        _sendMessage("*.loading", json.dumps(progress), MQ_LOGS)
         if log: print(f"[bright_yellow][{timer}][/]  {step}")
 
-def main(args):
+def main():
     global W, D
-    W, D = args.get("width", 150), args.get("depth", 200)
-    rep.TYPE = args.get("comm", "BLE")
+    W, D = WIDTH, DEPTH
+    rep.TYPE = COMM
     plot.rcParams["toolbar"] = "None"
 
     updateProgress("build", 0.0, "Generating layout")
@@ -75,7 +90,7 @@ def main(args):
             executor.submit(runBuild)
             executor.submit(runSigStren)
 
-        # lifetime()
+        lifetime()
 
     except Exception as e:
         print(f"[bright_red][{timer}]  ERROR: {e}[/]", file=stderr)
@@ -92,14 +107,21 @@ def lifetime():
         callback = lambda v, s=None, log=False: updateProgress("signal", 1, s, False)
         sigStren(rep.cloud, rep.STATE.instances, callback)
         rep.STATE.tick()
+        _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
 
         print(f"Tick: {tick}/{end}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Thread(target=main, args=[config]).start()
+    global connection
+    global channel
+    connection = Connection(hostname=MQ_URI, username="guest", password="guest")
+    channel = connection.channel()
+    channel.exchange.declare(exchange="edge-mesh", exchange_type="topic")
+    Thread(target=main).start()
     app.STATE = rep.STATE  # type: ignore
     yield
+    connection.close()
 
 app = FastAPI(lifespan=lifespan)
 origins = [
@@ -115,9 +137,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/connect")
+async def clientConnect():
+    global mq_key
+    global channel
+    while True:
+        queue_name = str(uuid.uuid4())
+
+        try:
+            channel.queue.declare(queue=queue_name, passive=True)
+        except AMQPChannelError:
+            channel = connection.channel()
+            res = channel.queue.declare(queue=queue_name, auto_delete=True)
+            mq_key = res.queue
+            break
+    return mq_key
+
+# app.STATE.getStates(app.STATE.cur)
+def _sendMessage(key, msg, log=False):
+    try:
+        channel.basic.publish(exchange="edge-mesh", routing_key=key, body=msg)
+        if log:
+            print(f"{key} sent: {msg}")
+    except AMQPMessageError as e:
+        print(f"AMQPError occurred: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
 @app.get("/progress")
 async def getProgress():
-    global progress; return progress
+    global progress
+    return progress
 
 @app.get("/")
 def getRoot():

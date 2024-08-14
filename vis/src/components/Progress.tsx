@@ -12,16 +12,14 @@ interface Splash {
     signal: Progress
 }
 
-const Bar: Component<{ progress: Progress}> = ({ progress: {value, step} }) => (
+const Bar: Component<{ progress: Progress }> = ({ progress: { value, step } }) => (
     <div className="progress-container">
         <div className={`progress-label ${value == 0 ? "idle" : ""}`}>
-            {step}{value === 1 ? "" : "..."}
+            {step}
+            {value === 1 ? "" : "..."}
         </div>
         <div className="progress-bar">
-            <div
-                className={`progress-fill ${value == 1 ? "complete" : ""}`}
-                style={{ width: `${value * 100}%` }}
-            ></div>
+            <div className={`progress-fill ${value == 1 ? "complete" : ""}`} style={{ width: `${value * 100}%` }}></div>
         </div>
     </div>
 )
@@ -36,6 +34,7 @@ const Splash: Component<Splash> = ({ build, signal }) => {
 }
 
 let splash: ReactDOM.Root
+let isMounted = true
 
 export function initSplash() {
     const parent = document.body.appendChild(document.createElement("div"))
@@ -43,11 +42,14 @@ export function initSplash() {
 }
 
 export function updateProgress(build: Progress, signal: Progress) {
-    splash.render(<Splash build={build} signal={signal} />)
+    if (isMounted) splash.render(<Splash build={build} signal={signal} />)
 }
 
 export function removeSplash() {
-    if (splash) splash.unmount()
+    if (splash) {
+        splash.unmount()
+        isMounted = false
+    }
 }
 
 export default Splash
