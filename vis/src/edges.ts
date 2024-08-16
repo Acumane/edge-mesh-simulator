@@ -7,7 +7,7 @@ import { scene } from "./setup"
 
 const MAX_VERT = 10000
 let lineMesh: THREE.LineSegments
-let edgeThreshold = 75
+export let edgeThreshold = 75
 
 const strenCol: { [key: number]: THREE.Color } = {
     100: new THREE.Color(0x00ff00),

@@ -3,6 +3,7 @@ import { camera, cameraControls, factoryVis } from "./setup"
 import { controllerSphereMesh, controllers } from "./controllers"
 import { initPopup, updatePopup } from "./components/Popup"
 import { factoryOpacity, factoryGroup, OFFSET } from "./factory"
+import { isLaunched } from "./socket"
 
 let ray: THREE.Raycaster, mouse: THREE.Vector2
 export let onController: string | null = null,
@@ -46,28 +47,32 @@ function onPopupMouse(event: MouseEvent) {
 
     cameraControls.setPosition(...adjustCam.toArray(), true)
     cameraControls.setTarget(...target.toArray(), true)
-    
+
     onPopupHover(event)
 }
 
-function onPopupHover(event: MouseEvent) { // TODO: effects
+function onPopupHover(event: MouseEvent) {
+    // TODO: effects
     const popup = document.getElementById("popup")
     if (popup) {
         const rect = popup.getBoundingClientRect()
-        overPopup = event.clientX >= rect.left && event.clientX <= rect.right &&
-                       event.clientY >= rect.top && event.clientY <= rect.bottom
+        overPopup =
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom
     }
 }
 
 function checkIntersect(event: MouseEvent) {
+    if (!isLaunched) return false
     mouse.x = event.clientX / (window.innerWidth / 2) - 1
     mouse.y = -event.clientY / (window.innerHeight / 2) + 1
     ray.setFromCamera(mouse, camera)
     let occluded = ray.intersectObject(factoryGroup, true),
         intersects = ray.intersectObject(controllerSphereMesh)
     if (intersects.length > 0) {
-        if (occluded.length > 0 && occluded[0].distance < intersects[0].distance && factoryVis == 1)
-            factoryOpacity(0.2)
+        if (occluded.length > 0 && occluded[0].distance < intersects[0].distance && factoryVis == 1) factoryOpacity(0.2)
         return intersects.length > 0 ? intersects[0] : false
     } else return false
 }
@@ -84,7 +89,7 @@ function showPopup(name: string) {
 
     // Use spherical cordinates to better capture rotation about target
     orientOffset = new THREE.Spherical().setFromVector3(camera.position.clone().sub(target))
-    const adjustCam = target.clone().add(new THREE.Vector3().setFromSpherical(orientOffset)) 
+    const adjustCam = target.clone().add(new THREE.Vector3().setFromSpherical(orientOffset))
 
     cameraControls.setPosition(...adjustCam.toArray(), true)
     cameraControls.setTarget(...target.toArray(), true)
@@ -105,7 +110,7 @@ export function updateInteract() {
     if (onController) {
         const cur = controllers[onController],
             pos = new THREE.Vector3(cur.pos.x, cur.pos.z, -cur.pos.y).add(offset)
-        //  (in-place) convert vector from world space -> camera's NDC space. 
+        //  (in-place) convert vector from world space -> camera's NDC space.
         pos.project(camera)
 
         // NDC space [-1, 1] -> normalize [0, 1] -> window space

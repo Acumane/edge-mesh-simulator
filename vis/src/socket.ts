@@ -4,7 +4,8 @@ import { initSplash, updateProgress } from "./components/Progress"
 import { loadControllers } from "./controllers"
 import { launch } from "./main"
 
-let isLaunched = false
+// add state mangagement library to pin all global export vals
+export let isLaunched = false
 
 export let ws_client = new Client({
     brokerURL: "ws://" + window.location.hostname + ":15674/ws",
@@ -25,8 +26,8 @@ export let ws_client = new Client({
                 if (data.build.value < 1.0 || data.signal.value < 1.0) {
                     requestAnimationFrame(empty)
                 } else if (!isLaunched) {
-                    isLaunched = true
                     await launch()
+                    isLaunched = true
                 }
             }
         })
