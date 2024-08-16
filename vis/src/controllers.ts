@@ -1,5 +1,4 @@
 import * as THREE from "three"
-import axios from "axios"
 import { scene, COL } from "./setup"
 import { OFFSET } from "./factory"
 
@@ -11,16 +10,15 @@ export interface Controller {
     ip: string
     hears: { [key: string]: number }
 }
-
-export let controllers: { [key: string]: Controller } = {}
+type Mesh = { [key: string]: Controller }
+export let controllers: Mesh = {}
 export let controllerMesh: THREE.InstancedMesh, controllerSphereMesh: THREE.InstancedMesh
 let edgeMesh: THREE.LineSegments,
     edges: Array<[string, string]> = []
 
-async function getControllers(): Promise<{ [key: string]: Controller }> {
+function sendControllers(data: any): Mesh {
     try {
-        const response = await axios.get("http://localhost:8001/controllers")
-        return response.data.reduce((acc: { [key: string]: Controller }, item: any) => {
+        return data.reduce((acc: Mesh, item: any) => {
             acc[item.name] = {
                 name: item.name,
                 comm: item.comm,
@@ -37,30 +35,18 @@ async function getControllers(): Promise<{ [key: string]: Controller }> {
     }
 }
 
-async function sendControllers(data: any): Promise<{ [key: string]: Controller }> {
-    try {
-        return data.reduce((acc: { [key: string]: Controller }, item: any) => {
-            acc[item.name] = {
-                name: item.name,
-                comm: item.comm,
-                pos: item.pos,
-                orient: item.orient,
-                ip: item.ip,
-                hears: item.hears
-            }
-            return acc
-        }, {})
-    } catch (error) {
-        console.error("Error fetching data:", error)
-        return {}
-    }
+export function loadControllers(data: any) {
+    applyControllers(data)
+    if (!controllerMesh) setupControllerMesh()
+    if (!edgeMesh) setupEdgeMesh()
+    updateControllers(data)
 }
 
-export async function loadControllers(data: any) {
-    controllers = await sendControllers(data)
-    setupControllerMesh()
-    setupEdgeMesh()
-    updateControllers()
+function applyControllers(data: any) {
+    const stripped: Mesh = sendControllers(data)
+    Object.values(stripped).forEach((item: Controller) => {
+        controllers[item.name] = item
+    })
 }
 
 function setupControllerMesh() {
@@ -102,20 +88,25 @@ function setupEdgeMesh() {
     scene.add(edgeMesh)
 }
 
-export function updateControllers() {
-    updateControllerPos()
+export function updateControllers(data: Mesh) {
+    updateControllerPos(data)
     updateEdges()
 }
 
-function updateControllerPos() {
+function updateControllerPos(data: Mesh) {
     if (!controllerMesh || !controllerSphereMesh) return
     const tmpMatrix = new THREE.Matrix4()
-    let index = 0
-    Object.values(controllers).forEach((item: Controller) => {
-        tmpMatrix.setPosition(item.pos.x, item.pos.z, -item.pos.y)
-        controllerMesh.setMatrixAt(index, tmpMatrix)
-        controllerSphereMesh.setMatrixAt(index, tmpMatrix)
-        index++
+
+    // TODO: Handle issues when indexing becomes out of order when
+    // changing controller order or adding/removing controllers
+    // OR maybe abstract adding / removing to seperate feature
+
+    Object.values(controllers).forEach((item: Controller, index: number) => {
+        if (item.name in data) {
+            tmpMatrix.setPosition(item.pos.x, item.pos.z, -item.pos.y)
+            controllerMesh.setMatrixAt(index, tmpMatrix)
+            controllerSphereMesh.setMatrixAt(index, tmpMatrix)
+        }
     })
     controllerMesh.instanceMatrix.needsUpdate = true
     controllerSphereMesh.instanceMatrix.needsUpdate = true

@@ -4,6 +4,8 @@ import { initSplash, updateProgress } from "./components/Progress"
 import { loadControllers } from "./controllers"
 import { launch } from "./main"
 
+let isLaunched = false
+
 export let ws_client = new Client({
     brokerURL: "ws://" + window.location.hostname + ":15674/ws",
     connectHeaders: {
@@ -13,15 +15,7 @@ export let ws_client = new Client({
     onConnect: async () => {
         console.log("Connected to RabbitMQ WebSocket")
 
-        // TODO: Publish rebound message here
-
-        // try {
-        //     // Fetch the routing key from the server
-        //     const response = await axios.get("http://localhost:8001/connect")
-        //     const mq_key = response.data
-
         initSplash()
-
         ws_client.subscribe(`/exchange/edge-mesh/*.loading`, async (message) => {
             const data = JSON.parse(message.body)
             console.log(data)
@@ -30,19 +24,27 @@ export let ws_client = new Client({
             if (data.build.value >= 1.0 && data.signal.value >= 1.0) {
                 if (data.build.value < 1.0 || data.signal.value < 1.0) {
                     requestAnimationFrame(empty)
-                } else await launch()
+                } else if (!isLaunched) {
+                    isLaunched = true
+                    await launch()
+                }
             }
         })
 
-        // ws_client.subscribe(`/exchange/edge-mesh/*.data`, async (message) => {
-        //     const data = JSON.parse(message.body)
-        //     console.log(data)
-        //     // await loadControllers(data)
-        //     // update controllers here
-        // })
-        // } catch (error) {
-        //     console.error("Error fetching routing key:", error)
-        // }
+        ws_client.subscribe(`/exchange/edge-mesh/*.data`, async (message) => {
+            const data = JSON.parse(message.body)
+            console.log(data)
+            loadControllers(data)
+        })
+        const reloadMessage = {
+            type: "reload",
+            content: "Triggering reload process."
+        }
+        ws_client.publish({
+            destination: "/exchange/edge-mesh/reload",
+            body: JSON.stringify(reloadMessage)
+        })
+        console.log("Sent reload message to queue")
     },
     onWebSocketError: (e) => {
         console.error(e)

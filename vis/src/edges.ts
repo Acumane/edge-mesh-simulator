@@ -3,22 +3,24 @@ import { controllers, Controller } from "./controllers"
 import { OFFSET } from "./factory"
 import { scene } from "./setup"
 
+// TODO: Fix naming conflict issues with controllers.ts
+
 const MAX_VERT = 10000
 let lineMesh: THREE.LineSegments
 let edgeThreshold = 75
 
 const strenCol: { [key: number]: THREE.Color } = {
     100: new THREE.Color(0x00ff00),
-    90:  new THREE.Color(0x00ff00),
-    60:  new THREE.Color(0xffff00),
-    30:  new THREE.Color(0xff8000),
-    0:   new THREE.Color(0xff0000)
+    90: new THREE.Color(0x00ff00),
+    60: new THREE.Color(0xffff00),
+    30: new THREE.Color(0xff8000),
+    0: new THREE.Color(0xff0000)
 }
 
 export function initEdges() {
     const geometry = new THREE.BufferGeometry(),
         positions = new Float32Array(MAX_VERT * 6), // 3<x,y,z> * 2
-        colors = new Float32Array(MAX_VERT * 8)     // 4<r,g,b,a> * 2
+        colors = new Float32Array(MAX_VERT * 8) // 4<r,g,b,a> * 2
 
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3))
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 4))
@@ -33,7 +35,7 @@ export function initEdges() {
 export function updateEdges() {
     const { position, color } = lineMesh.geometry.attributes,
         cVals = Object.values(controllers)
-        let lines = 0
+    let lines = 0
 
     position.array.fill(0)
     for (let a = 0; a < cVals.length && lines < MAX_VERT; a++) {

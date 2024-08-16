@@ -5,7 +5,6 @@ import Stats from "three/examples/jsm/libs/stats.module"
 import { initCamera, initLights, initKeybinds, orientCamera } from "./setup"
 import { scene, renderer, camera, cameraControls } from "./setup"
 import { loadFactory } from "./factory"
-import { updateControllers } from "./controllers"
 import { removeSplash } from "./components/Progress"
 import { initInteract, updateInteract } from "./interact"
 import { initEdges, updateEdges } from "./edges"
@@ -19,9 +18,8 @@ function animate() {
     requestAnimationFrame(animate)
     stats.update()
     const delta = clock.getDelta()
-    // updateControllers()
-    // updateEdges()
     updateInteract() // move popup with node
+    updateEdges()
     cameraControls.update(delta)
     renderer.render(scene, camera)
 }

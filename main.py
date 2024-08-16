@@ -19,7 +19,7 @@ from threading import Thread
 from uvicorn import run
 from config import WIDTH, DEPTH, TICKS, COMM, MQ_URI, MQ_LOGS
 from amqpstorm import Connection, Channel
-from amqpstorm import AMQPChannelError, AMQPMessageError
+from amqpstorm import AMQPMessageError
 import json
 
 @define
@@ -53,7 +53,7 @@ def updateProgress(task, value, step=None, log=True):
     progress[task]["value"] = value
     if step:
         progress[task]["step"] = step
-        _sendMessage("*.loading", json.dumps(progress), MQ_LOGS)
+        if (value <= 1): _sendMessage("*.loading", json.dumps(progress), MQ_LOGS)
         if log: print(f"[bright_yellow][{timer}][/]  {step}")
 
 def main():
@@ -104,12 +104,24 @@ def lifetime():
     for tick in range(end + 1):
         progress["lifetime"]["tick"] = tick
 
-        callback = lambda v, s=None, log=False: updateProgress("signal", 1, s, False)
+        callback = lambda v, s=None, log=False: updateProgress("signal", 1.1, s, False)
         sigStren(rep.cloud, rep.STATE.instances, callback)
         rep.STATE.tick()
         _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
 
         print(f"Tick: {tick}/{end}")
+
+def on_message(message):
+    global progress
+    try:
+        body = json.loads(message.body)
+        if (body["type"] == "reload"):
+            _sendMessage("*.loading", json.dumps(progress), MQ_LOGS)
+            if (progress["build"]["value"] >= 1 and progress["signal"]["value"] >= 1):
+                _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
+
+    except Exception as e:
+        print(f"Error processing message: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -118,6 +130,11 @@ async def lifespan(app: FastAPI):
     connection = Connection(hostname=MQ_URI, username="guest", password="guest")
     channel = connection.channel()
     channel.exchange.declare(exchange="edge-mesh", exchange_type="topic")
+    channel.queue.declare("reload", durable=True)
+    channel.queue.bind(exchange="edge-mesh", queue="reload", routing_key="reload")
+    channel.basic.consume(on_message, "reload", no_ack=True)
+    consumer_thread = Thread(target=channel.start_consuming)
+    consumer_thread.start()
     Thread(target=main).start()
     app.STATE = rep.STATE  # type: ignore
     yield
@@ -137,22 +154,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/connect")
-async def clientConnect():
-    global mq_key
-    global channel
-    while True:
-        queue_name = str(uuid.uuid4())
-
-        try:
-            channel.queue.declare(queue=queue_name, passive=True)
-        except AMQPChannelError:
-            channel = connection.channel()
-            res = channel.queue.declare(queue=queue_name, auto_delete=True)
-            mq_key = res.queue
-            break
-    return mq_key
-
 # app.STATE.getStates(app.STATE.cur)
 def _sendMessage(key, msg, log=False):
     try:
@@ -164,18 +165,9 @@ def _sendMessage(key, msg, log=False):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
-@app.get("/progress")
-async def getProgress():
-    global progress
-    return progress
-
 @app.get("/")
 def getRoot():
     return {"message": "Alive"}
-
-@app.get("/controllers")
-async def controllers():
-    return app.STATE.getStates(app.STATE.cur)  # type: ignore
 
 if __name__ == "__main__":
     run("__main__:app", host="localhost", port=8001, reload=False, log_level="critical")
