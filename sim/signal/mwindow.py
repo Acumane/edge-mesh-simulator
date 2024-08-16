@@ -5,7 +5,7 @@ from pyglet.window import Window, key
 from pyglet.gl import *
 from pywavefront import visualization, Wavefront, configure_logging
 
-from murt.utils.object import Object
+from object import Object
 
 configure_logging(
     logging.ERROR,
@@ -29,6 +29,10 @@ class MurtWindow(Window):
         glClearColor(0.9, 0.9, 0.875, 1)
         self.alive = True
         self.zoom = 66
+
+    def load_scene(self, name, file_path):
+        self.scene.append(Object(name, file_path=file_path))
+
 
     def on_resize(self, width, height):
         self.win_size = [width, height]

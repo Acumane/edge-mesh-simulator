@@ -1,5 +1,5 @@
-from murt.engine import Tracer
-from murt.window import Window
+from mtracer import tracer as Tracer
+from mwindow import MurtWindow as Window
 from time import time
 from attrs import define, Factory as new
 
@@ -19,7 +19,7 @@ The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 """
 
-SCENE = "../poznan.obj"
+SCENE = "poznan.obj"
 
 @define
 class Timer:

@@ -4,13 +4,13 @@ import pandas as pd
 
 from murt import core, calculator
 
-from murt.utils import objreader
+from object import read
 
 
 class tracer:
     def __init__(self, scene_path=None):
         if scene_path is not None:
-            vertices, triangles = objreader.read(scene_path)
+            vertices, triangles = read(scene_path)
             self.core = core.Tracer(vertices, triangles)
         else:
             self.core = None
