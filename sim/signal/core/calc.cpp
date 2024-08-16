@@ -2,7 +2,7 @@
 
 #include <Python.h>
 
-#include "calculator.hpp"
+#include "calc.hpp"
 
 static PyObject *GetDirectLoss(PyObject *self, PyObject *args)
 {
@@ -103,23 +103,23 @@ static PyObject *GetReflectionLoss(PyObject *self, PyObject *args)
     return Py_BuildValue("f f", ReflectedPathLoss(txPos, rxPos, refPos, txFreq, matPerm), GetDelay(points, LIGHT_SPEED));
 }
 
-static PyMethodDef CalculatorFunctions[] = {
+static PyMethodDef CalcFunctions[] = {
     {"directLoss", (PyCFunction)GetDirectLoss, METH_VARARGS, "Calculate Free Space Path Loss"},
     {"reflectLoss", (PyCFunction)GetReflectionLoss, METH_VARARGS, "Calculate Reflection Loss"},
     {"diffractLoss", (PyCFunction)GetDiffractionLoss, METH_VARARGS, "Calculate Diffraction Loss"},
     {NULL}};
 
-static PyModuleDef CalculatorModule = {
+static PyModuleDef CalcModule = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "calculator",
+    .m_name = "calc",
     .m_doc = "The path loss calculator module",
     .m_size = -1,
-    .m_methods = CalculatorFunctions,
+    .m_methods = CalcFunctions,
 };
 
-PyMODINIT_FUNC PyInit_calculator(void)
+PyMODINIT_FUNC PyInit_calc(void)
 {
-    PyObject *m = PyModule_Create(&CalculatorModule);
+    PyObject *m = PyModule_Create(&CalcModule);
     if (m == NULL)
         return NULL;
 
