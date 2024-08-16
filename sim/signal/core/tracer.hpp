@@ -11,7 +11,7 @@
 #include "triangle.hpp"
 #include "bvh.hpp"
 
-#include "calculator.hpp"
+#include "calc.hpp"
 
 class Tracer
 {

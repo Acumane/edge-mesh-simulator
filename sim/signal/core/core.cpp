@@ -13,7 +13,7 @@
 #include "bvh.hpp"
 #include "triangle.hpp"
 #include "tracer.hpp"
-#include "calculator.hpp"
+#include "calc.hpp"
 
 typedef struct
 {
@@ -288,7 +288,7 @@ static PyMemberDef RayTracerMembers[] = {
     {NULL}};
 
 static PyTypeObject RayTracerType = {
-    PyVarObject_HEAD_INIT(NULL, 0) "murtcore.Tracer", /* tp_name */
+    PyVarObject_HEAD_INIT(NULL, 0) "core.Tracer", /* tp_name */
     sizeof(RayTracerObject),                          /* tp_basicsize */
     0,                                                /* tp_itemsize */
     (destructor)RayTracerObjectDealloc,               /* tp_dealloc */
@@ -327,10 +327,10 @@ static PyTypeObject RayTracerType = {
     RayTracerObjectNew,                               /* tp_new */
 };
 
-static PyModuleDef murtcore_module = {
+static PyModuleDef core_module = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "murtcore",
-    .m_doc = "MURT Core Tracer", // TODO[]: To be documented.
+    .m_name = "core",
+    .m_doc = "Core Tracer", // TODO[]: To be documented.
     .m_size = -1,
 };
 
@@ -341,7 +341,7 @@ PyInit_core(void)
         return NULL;
 
     PyObject *module_;
-    module_ = PyModule_Create(&murtcore_module);
+    module_ = PyModule_Create(&core_module);
     if (module_ == NULL)
         return NULL;
 
