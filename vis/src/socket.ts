@@ -6,6 +6,22 @@ import { launch } from "./main"
 
 // add state mangagement library to pin all global export vals
 export let isLaunched = false
+export let graphPath = new Map()
+
+interface Pred {
+    prev: string
+    height: number
+    val: number
+}
+
+function stripGraph(data: any) {
+    let edges = []
+    console.log(data)
+    for (let [key, value] of Object.entries(data)) {
+        if ((value as Pred).prev) edges.push(key + " " + (value as Pred).prev)
+    }
+    return edges
+}
 
 export let ws_client = new Client({
     brokerURL: "ws://" + window.location.hostname + ":15674/ws",
@@ -34,8 +50,16 @@ export let ws_client = new Client({
 
         ws_client.subscribe(`/exchange/edge-mesh/*.data`, async (message) => {
             const data = JSON.parse(message.body)
-            console.log(data)
+            console.log("data")
             loadControllers(data)
+        })
+        ws_client.subscribe(`/exchange/edge-mesh/*.graph`, async (message) => {
+            const data = JSON.parse(message.body)
+            const edges = stripGraph(JSON.parse(data.pred))
+            graphPath.set("pred", JSON.parse(data.pred))
+            graphPath.set("cache", JSON.parse(data.cache))
+            graphPath.set("edges", edges)
+            // console.log(graphPath)
         })
         const reloadMessage = {
             type: "reload",

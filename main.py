@@ -3,6 +3,7 @@ from gen.proc import *
 from gen.place import *
 from sim.signal import *
 from sim import rep
+from sim.graph import *
 from gen.build import build
 from typing import *  # type: ignore
 from attrs import define, Factory as new
@@ -106,8 +107,11 @@ def lifetime():
 
         callback = lambda v, s=None, log=False: updateProgress("signal", 1.1, s, False)
         sigStren(rep.cloud, rep.STATE.instances, callback)
+        callback = lambda v, s=None, log=True, tick=tick: updateProgress("graph", tick, s, False)
+        makeGraph(rep.STATE.getStates(rep.STATE.cur), tick)
         rep.STATE.tick()
         _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
+        _sendMessage("*.graph", json.dumps(infoGraph()), MQ_LOGS)
 
         print(f"Tick: {tick}/{end}")
 
@@ -119,6 +123,7 @@ def on_message(message):
             _sendMessage("*.loading", json.dumps(progress), MQ_LOGS)
             if (progress["build"]["value"] >= 1 and progress["signal"]["value"] >= 1):
                 _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
+                _sendMessage("*.graph", json.dumps(infoGraph()), MQ_LOGS)
 
     except Exception as e:
         print(f"Error processing message: {e}")

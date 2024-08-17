@@ -2,6 +2,7 @@ import * as THREE from "three"
 import { controllers, Controller } from "./controllers"
 import { OFFSET } from "./factory"
 import { scene } from "./setup"
+import { graphPath } from "./socket"
 
 // TODO: Fix naming conflict issues with controllers.ts
 
@@ -32,17 +33,51 @@ export function initEdges() {
     scene.add(lineMesh)
 }
 
+const isValidHex = (hex: string) => /^#([A-Fa-f0-9]{3,4}){1,2}$/.test(hex)
+
+const getChunksFromString = (st: any, chunkSize: number) => st.match(new RegExp(`.{${chunkSize}}`, "g"))
+
+const convertHexUnitTo256 = (hexStr: string) => parseInt(hexStr.repeat(2 / hexStr.length), 16)
+
+const getAlphafloat = (a: any, alpha: any) => {
+    if (typeof a !== "undefined") {
+        return a / 255
+    }
+    if (typeof alpha != "number" || alpha < 0 || alpha > 1) {
+        return 1
+    }
+    return alpha
+}
+
+export const hexToRGBA = (hex: string, alpha: any = -1) => {
+    if (!isValidHex(hex)) {
+        throw new Error("Invalid HEX")
+    }
+    const chunkSize = Math.floor((hex.length - 1) / 3)
+    const hexArr = getChunksFromString(hex.slice(1), chunkSize)
+    const [r, g, b, a] = hexArr.map(convertHexUnitTo256)
+    const n_a = getAlphafloat(a, alpha)
+    return { r, g, b, n_a }
+}
+
 export function updateEdges() {
     const { position, color } = lineMesh.geometry.attributes,
         cVals = Object.values(controllers)
     let lines = 0
+    const edges = new Set(graphPath.get("edges"))
+    console.log(edges)
 
     position.array.fill(0)
     for (let a = 0; a < cVals.length && lines < MAX_VERT; a++) {
         for (let b = a + 1; b < cVals.length && lines < MAX_VERT; b++) {
+            if (edges.has(cVals[a].name + " " + cVals[b].name) || edges.has(cVals[b].name + " " + cVals[a].name)) {
+                updateLine(lines, cVals[a], cVals[b], hexToRGBA("#000000"))
+                lines++
+                continue
+            }
             const stren = Math.min(cVals[a].hears[cVals[b].name], cVals[b].hears[cVals[a].name])
             if (stren > edgeThreshold) {
-                updateLine(lines, cVals[a], cVals[b], stren)
+                updateLine(lines, cVals[a], cVals[b], getLineColor(stren))
                 lines++
             }
         }
@@ -50,10 +85,10 @@ export function updateEdges() {
     position.needsUpdate = color.needsUpdate = true
 }
 
-function updateLine(i: number, cA: Controller, cB: Controller, stren: number) {
+function updateLine(i: number, cA: Controller, cB: Controller, lineColor: any) {
     const { position, color } = lineMesh.geometry.attributes
     position.array.set([cA.pos.x, cA.pos.z, -cA.pos.y, cB.pos.x, cB.pos.z, -cB.pos.y], i * 6)
-    const { r, g, b, a } = getLineColor(stren)
+    const { r, g, b, a } = lineColor
     color.array.set([r, g, b, a, r, g, b, a], i * 8)
 }
 

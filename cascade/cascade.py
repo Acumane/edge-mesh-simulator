@@ -44,6 +44,9 @@ class Cascade:
     def show(self):
         self.perf.print()
     
+    def json(self):
+        return self.graph.json()
+    
     def perfClear(self):
         self.perf.clear()
 
@@ -98,9 +101,9 @@ class Cascade:
     @_perfDec
     def dijkstra(self, v):
         self.clear()
-        n, v = self.graph.n(), str(v)
-        self.pred = {str(v): Pred(prev="", height=0, val=0) for v in range(n)}
-        self.cache = {str(v): float("inf") for v in range(n)}
+        v = str(v)
+        self.pred = {str(x): Pred(prev="", height=0, val=0) for x in self.graph.graph.nodes()}
+        self.cache = {str(x): float("inf") for x in self.graph.graph.nodes()}
         self.cache[v] = 0.0
         pq = []; vis = set()
         heapq.heappush(pq, (0, v))   

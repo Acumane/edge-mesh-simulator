@@ -134,8 +134,8 @@ export function initKeybinds() {
     })
     function orbit(dir: string) {
         return (event: any) => {
-            const sign = (dir == "left" ? -1 : 1)
-            cameraControls.rotate(sign*0.1 * THREE.MathUtils.DEG2RAD * event.deltaTime, 0, true)
+            const sign = dir == "left" ? -1 : 1
+            cameraControls.rotate(sign * 0.1 * THREE.MathUtils.DEG2RAD * event.deltaTime, 0, true)
         }
     }
     leftKey.addEventListener("holding", orbit("left"))

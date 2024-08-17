@@ -1,14 +1,18 @@
 import random
 import networkx as nx
+from networkx.readwrite import json_graph
 import matplotlib.pyplot as plt
+import matplotlib
 from attrs import define, field, Factory as new
 from typing import Dict, Any, Tuple
+import json
 """
 Wrapper class for networkx graph
 
 Import or generate graph using erdos_renyi; supports random or provided updates 
 (see update() for formatting and expected output)
 """
+matplotlib.use("Agg")
 
 @define
 class DGraph:
@@ -27,6 +31,9 @@ class DGraph:
 
     def m(self) -> int:
         return self.graph.number_of_edges()
+
+    def json(self) -> str:
+        return json.dumps(json_graph.adjacency_data(self.graph))
 
     def getW(self, u, v):
         if not self.graph.has_edge(u, v): return float("inf")
@@ -81,9 +88,7 @@ class DGraph:
         if source:
             edges = [(pred[node].prev, node) for node in pred]
             edges = [e for e in edges if self.graph.has_edge(e[0], e[1])]
-            nx.draw_networkx_edges(
-                self.graph, pos, edgelist=edges, edge_color="r", width=2
-            )
+            nx.draw_networkx_edges(self.graph, pos, edgelist=edges, edge_color="r", width=2)
 
     def _colorUpdate(self, updates):
         nodes = set()
@@ -178,8 +183,7 @@ if __name__ == "__main__":
     dgraph.randUpdate(5)
 
     # manual updates
-    updates = [(11, "add"), ((1, 2), "mod", 5), ((2, 3), "rem"), ((3, 4), "mod"),
-        ((3, 4), "mod", "bait")]
+    updates = [(11, "add"), ((1, 2), "mod", 5), ((2, 3), "rem"), ((3, 4), "mod"), ((3, 4), "mod", "bait")]
     ret = dgraph.update(updates)
     print(ret)
 
