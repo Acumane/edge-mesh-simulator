@@ -4,6 +4,10 @@ from typing import List
 def visualize(mesh: trimesh.Trimesh, tx_pos, rx_pos, paths: List):
     scene = trimesh.Scene()
     scene.add_geometry(mesh)
+    for geometry in scene.geometry.values():
+        if hasattr(geometry.visual, "face_colors"):
+            geometry.visual.face_colors[:, 3] = 128  # 50% opacity
+
 
     tx = trimesh.creation.uv_sphere(radius=0.5)
     tx.visual.face_colors = [0, 255, 0, 255]; tx.apply_translation(tx_pos)

@@ -24,7 +24,7 @@ def main():
     tracer = Tracer()
     tracer.load(vertices, faces)
 
-    a, b = [100, 60, 5], [0, 10, 20]
+    a, b = [100, 60, 16], [20, 90, 19]
 
     timer = Timer()
     result = tracer.trace(a, b)

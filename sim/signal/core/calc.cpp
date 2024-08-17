@@ -26,7 +26,7 @@ static PyObject *GetDirectLoss(PyObject *self, PyObject *args)
     points.push_back(txPos);
     points.push_back(rxPos);
 
-    return Py_BuildValue("f f", DirectPathLoss(txPos, rxPos, txFreq), GetDelay(points, LIGHT_SPEED));
+    return Py_BuildValue("f f", SegmentLoss(txPos, rxPos, txFreq), GetDelay(points, LIGHT_SPEED));
 }
 
 static PyObject *GetDiffractionLoss(PyObject *self, PyObject *args)

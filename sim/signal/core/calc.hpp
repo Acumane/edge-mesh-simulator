@@ -13,6 +13,10 @@
 #define LIGHT_SPEED 299792458.0f
 #define AIR_IOR 1.00029f
 
+static float ObstacleLoss(float distance, float frequency) { // PLACEHOLDER
+    return 10.0f * distance * (frequency / 1e9); // 10 dB per meter @ 1GHz, scaled w/ freq
+}
+
 static float GetDelay(std::vector<Vec3> points, float speed)
 {
     float total_distance = 0.0f;
@@ -23,9 +27,33 @@ static float GetDelay(std::vector<Vec3> points, float speed)
     return float(total_distance / speed);
 }
 
-static float DirectPathLoss(Vec3 txPos, Vec3 rxPos, float txFreq)
+static float SegmentLoss(Vec3 txPos, Vec3 rxPos, float txFreq)
 {
-    return 20.0f * log10(Vec3::Distance(txPos, rxPos)) + 20.0f * log10(txFreq) - 147.5f;
+    float distance = Vec3::Distance(txPos, rxPos);
+    return 20.0f * log10(distance) + 20.0f * log10(txFreq) - 147.55f;
+}
+
+
+static float DirectPathLoss(const std::vector<Vec3>& path, float txFreq)
+{
+    float totalLoss = 0.0f;
+    float totalDistance = 0.0f;
+
+    for (size_t i = 0; i < path.size() - 1; ++i) {
+        float segmentDistance = Vec3::Distance(path[i], path[i+1]);
+        totalDistance += segmentDistance;
+
+        // presume: caster isn't inside obstacle & obstacles are closed
+        if (i % 2 == 0) {
+            totalLoss += 20.0f * log10(segmentDistance) + 20.0f * log10(txFreq) - 147.55f;
+        } else {
+            totalLoss += ObstacleLoss(segmentDistance, txFreq);
+        }
+    }
+
+    totalLoss += 20.0f * log10(totalDistance) + 20.0f * log10(txFreq) - 147.55f;
+
+    return totalLoss;
 }
 
 static float GetRefCoe(Vec3 txPos, Vec3 rxPos, Vec3 refPos, float matPerm, bool isTM)
@@ -89,7 +117,7 @@ static float DiffractedPathLoss(Vec3 txPos, Vec3 rxPos, std::vector<Vec3> edges,
     // Diffraction Loss is calculate according to the multiple knife edges by
     // Ensure the order of edges
     Vec3::ReorderEdges(txPos, edges);
-    float pl = DirectPathLoss(txPos, rxPos, txFreq);
+    float pl = SegmentLoss(txPos, rxPos, txFreq);
     if (edges.size() == 0)
         return pl;
     if (edges.size() == 1)
@@ -200,7 +228,14 @@ static float GetTotalPathLoss(Vec3 txPos, Vec3 rxPos,
         float loss_dB = 0.0f;
         if (record.type == RecordType::Direct)
         {
-            loss_dB = DirectPathLoss(txPos, rxPos, txFreq);
+            if (record.points.empty()) {
+                loss_dB = SegmentLoss(txPos, rxPos, txFreq);
+            } else {
+                std::vector<Vec3> path = {txPos};
+                path.insert(path.end(), record.points.begin(), record.points.end());
+                path.push_back(rxPos);
+                loss_dB = DirectPathLoss(path, txFreq);
+            }
         }
         else if (record.type == RecordType::SingleReflected)
         {
@@ -216,4 +251,5 @@ static float GetTotalPathLoss(Vec3 txPos, Vec3 rxPos,
     // return the total loss in linear
     return (float)(-10 * log10(total_loss_linear));
 }
+
 #endif

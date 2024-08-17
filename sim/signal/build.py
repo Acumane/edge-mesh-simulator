@@ -23,11 +23,13 @@ if not path.exists("bin"): makeDir("bin")
 core_module = Extension("bin.core",
                         sources=["core/core.cpp"],
                         include_dirs=[num.get_include(), "core"],
-                        extra_compile_args=["-std=c++11"])
+                        extra_compile_args=["-std=c++17"])
 
 calc_module = Extension("bin.calc",
                         sources=["core/calc.cpp"],
                         include_dirs=[num.get_include(), "core"],
-                        extra_compile_args=["-std=c++11"])
+                        extra_compile_args=["-std=c++17"])
 
 setup(license="MIT", ext_modules=[core_module, calc_module])
+
+# python build.py build_ext --inplace

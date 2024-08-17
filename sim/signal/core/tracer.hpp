@@ -39,6 +39,46 @@ public:
         volume_result_.clear();
     };
 
+    struct InterPoint {
+        Vec3 pos;
+        float dist;
+    };
+
+    std::vector<InterPoint> Penetrace(const Vec3& start, const Vec3& end) {
+        std::vector<InterPoint> inters;
+        Vec3 direction = Vec3(end.x_ - start.x_, end.y_ - start.y_, end.z_ - start.z_);
+        direction.Normalize();
+        Ray ray(start, direction);
+        Vec3 curPos = start;
+        float totalDist = 0.0f;
+        float distToEnd = Vec3::Distance(start, end);
+
+        while (totalDist < distToEnd) {
+            float hitDist = FLT_MAX;
+            if (scene_->IsIntersect(ray, hitDist)) {
+                if (hitDist + totalDist < distToEnd) {
+                    Vec3 hitPoint = ray.PositionAt(hitDist);
+                    inters.push_back({hitPoint, totalDist + hitDist});
+                    curPos = Vec3(hitPoint.x_ + direction.x_ * 0.001f,
+                                           hitPoint.y_ + direction.y_ * 0.001f,
+                                           hitPoint.z_ + direction.z_ * 0.001f);
+                    ray = Ray(curPos, direction);
+                    totalDist += hitDist + 0.001f;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        if (inters.empty() || Vec3::Distance(inters.back().position, end) > 0.001f) {
+            inters.push_back({end, distToEnd});
+        }
+
+        return inters;
+    }
+
     // IsHit is a primitive way of hit search with brute force approach
     // the optimised method is to use BVH (scene->IsIntersect).
     bool IsHit(const Ray &ray, float &closest_distance)
@@ -133,7 +173,7 @@ public:
 
     bool GetEdges(Vec3 txPos, Vec3 rxPos, Record &record)
     {
-        record.type = RecordType::Diffracted;
+        // record.type = RecordType::Diffracted;
         std::vector<Vec3> points;
         constexpr size_t max_scan = 20;
         size_t current_scan = 0;
@@ -185,21 +225,21 @@ public:
     {
         std::vector<Record> records;
 
-        // Trace -> LOS/NLOS
-        if (IsLOS(txPos, rxPos))
-        {
-            Record los_record;
-            los_record.type = RecordType::Direct;
-            records.push_back(los_record);
+        // Trace -> Direct path
+        std::vector<InterPoint> directPath = Penetrace(txPos, rxPos);
+        if (directPath.size() == 1) {
+            Record direct_record;
+            direct_record.type = RecordType::Direct;
+            records.push_back(direct_record);
         }
-        else
-        {
-            Record record;
-            if (GetEdges(txPos, rxPos, record))
-            {
-                Vec3::ReorderEdges(txPos, record.points);
-                records.push_back(record);
-            }
+        // Trace -> Diffracted path (broken)
+        else {
+          Record diffract_record;
+          diffract_record.type = RecordType::Diffracted;
+          for (const auto &inter : directPath) {
+            diffract_record.points.push_back(inter.pos);
+          }
+          records.push_back(diffract_record);
         }
 
         // Trace -> Reflection

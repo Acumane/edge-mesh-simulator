@@ -17,4 +17,5 @@ struct Record
     RecordType type;
     std::vector<Vec3> points;
 };
+
 #endif // !RECORD_H
