@@ -9,7 +9,6 @@ enum RecordType
     Direct = 0,
     Diffracted = 1,
     SingleReflected = 2,
-    MirrorRecord = 3
 };
 
 struct Record

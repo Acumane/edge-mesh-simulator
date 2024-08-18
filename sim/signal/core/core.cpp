@@ -18,7 +18,7 @@
 typedef struct
 {
     PyObject_HEAD
-        Tracer *tracer;
+    Tracer *tracer;
 } RayTracerObject;
 
 static PyObject *RecordsToPyRecords(std::vector<Record> records)
@@ -31,18 +31,6 @@ static PyObject *RecordsToPyRecords(std::vector<Record> records)
         if (record.type == RecordType::Direct)
         {
             py_record = Py_BuildValue("[i]", 1);
-        }
-        else if (record.type == RecordType::Diffracted)
-        {
-            size_t n = record.points.size();
-            PyObject *diff_points = PyList_New(n);
-            for (size_t j = 0; j < n; ++j)
-            {
-                Vec3 &dif_pos = record.points[j];
-                PyObject *py_diff_pos = Py_BuildValue("(f f f)", dif_pos.x_, dif_pos.y_, dif_pos.z_);
-                PyList_SetItem(diff_points, j, py_diff_pos);
-            }
-            py_record = Py_BuildValue("i O", 2, diff_points);
         }
         else if (record.type == RecordType::SingleReflected)
         {
@@ -78,130 +66,6 @@ static PyObject *Trace(RayTracerObject *self, PyObject *args)
     PyObject *py_records = RecordsToPyRecords(records);
 
     return py_records;
-}
-
-static PyObject *HitNearest(RayTracerObject *self, PyObject *args)
-{
-    PyArrayObject *txArrObj;
-    PyArrayObject *rxArrObj;
-    if (!PyArg_ParseTuple(args, "O|O", &txArrObj, &rxArrObj))
-        return NULL;
-
-    Vec3 fromPos, toPos;
-    fromPos.x_ = *(float *)PyArray_GETPTR1(txArrObj, 0);
-    fromPos.y_ = *(float *)PyArray_GETPTR1(txArrObj, 1);
-    fromPos.z_ = *(float *)PyArray_GETPTR1(txArrObj, 2);
-
-    toPos.x_ = *(float *)PyArray_GETPTR1(rxArrObj, 0);
-    toPos.y_ = *(float *)PyArray_GETPTR1(rxArrObj, 1);
-    toPos.z_ = *(float *)PyArray_GETPTR1(rxArrObj, 2);
-
-    return Py_BuildValue("f", (self->tracer)->HitNearest(fromPos, toPos));
-}
-
-static PyObject *IsOutdoor(RayTracerObject *self, PyObject *args)
-{
-    PyArrayObject *arrObj;
-    if (!PyArg_ParseTuple(args, "O", &arrObj))
-        return NULL;
-
-    Vec3 position;
-    position.x_ = *(float *)PyArray_GETPTR1(arrObj, 0);
-    position.y_ = *(float *)PyArray_GETPTR1(arrObj, 1);
-    position.z_ = *(float *)PyArray_GETPTR1(arrObj, 2);
-
-    return Py_BuildValue("i", (self->tracer)->IsOutdoor(position));
-}
-
-static PyObject *GetID(RayTracerObject *self, PyObject *Py_UNUSED(ignored))
-{
-    return Py_BuildValue("I", (self->tracer)->id_);
-}
-
-static PyObject *GetTracedVolume(RayTracerObject *self, PyObject *args)
-{
-    float x_min, x_max;
-    float y_min, y_max;
-    float z_min, z_max;
-    int x_n, y_n, z_n;
-    PyArrayObject *txPosObj;
-    float tx_freq, mat_perm;
-    int max_thread = 0;
-    if (!PyArg_ParseTuple(args, "f|f|i|f|f|i|f|f|i|O|f|f|i",
-                          &x_min, &x_max, &x_n,
-                          &y_min, &y_max, &y_n,
-                          &z_min, &z_max, &z_n,
-                          &txPosObj, &tx_freq, &mat_perm,
-                          &max_thread))
-        return NULL;
-
-    Vec3 txPos;
-    txPos.x_ = *(float *)PyArray_GETPTR1(txPosObj, 0);
-    txPos.y_ = *(float *)PyArray_GETPTR1(txPosObj, 1);
-    txPos.z_ = *(float *)PyArray_GETPTR1(txPosObj, 2);
-
-    Tracer *tracer = self->tracer;
-
-    float x_delta = (x_max - x_min) / (x_n - 1);
-    float y_delta = (y_max - y_min) / (y_n - 1);
-    float z_delta = (z_max - z_min) / (z_n - 1);
-
-    std::vector<std::thread> thread_vectors;
-    size_t threads_n;
-
-    if (max_thread == 0)
-    {
-        threads_n = std::thread::hardware_concurrency() * 5;
-    }
-    else if (max_thread < 0)
-    {
-        threads_n = 65535;
-    }
-    else
-    {
-        threads_n = max_thread;
-    }
-
-    for (int x_itr = 0; x_itr < x_n; ++x_itr)
-        for (int y_itr = 0; y_itr < y_n; ++y_itr)
-            for (int z_itr = 0; z_itr < z_n; ++z_itr)
-            {
-                Vec3 rxPos;
-                rxPos.x_ = x_min + x_delta * x_itr;
-                rxPos.y_ = y_min + y_delta * y_itr;
-                rxPos.z_ = z_min + z_delta * z_itr;
-                std::thread current_thread(&Tracer::TraceAsync, tracer,
-                                           txPos, rxPos, tx_freq, mat_perm);
-
-                thread_vectors.push_back(std::move(current_thread));
-
-                if (thread_vectors.size() >= threads_n)
-                {
-                    for (std::thread &thread : thread_vectors)
-                        thread.join();
-                    thread_vectors.clear();
-                }
-            }
-
-    // join threads
-    for (std::thread &thread : thread_vectors)
-        thread.join();
-    thread_vectors.clear();
-
-    std::vector<std::vector<float> > &results = tracer->volume_result_;
-    PyObject *list_results = PyList_New(results.size());
-    for (size_t i = 0; i < results.size(); ++i)
-    {
-        std::vector<float> &result = results[i];
-        PyObject *list_result = Py_BuildValue("f f f f",
-                                              result[0], result[1],
-                                              result[2], result[3]);
-
-        PyList_SetItem(list_results, i, list_result);
-    }
-    //clean the resullts
-    results.clear();
-    return list_results;
 }
 
 static PyObject *RayTracerObjectNew(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -268,24 +132,13 @@ static void RayTracerObjectDealloc(RayTracerObject *self)
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
-// static int RayTracerObjectInit(RayTracerObject *self, PyObject *args, PyObject *kwds)
-// {
-//     return 0;
-// }
-/*----------------------------------------------------------------*/
-
-/*Define methods*/
+/* Define methods */
 static PyMethodDef RayTracerMethods[] = {
     {"trace", (PyCFunction)Trace, METH_VARARGS, "Trace rays from tx to rx"},
-    {"isOutdoor", (PyCFunction)IsOutdoor, METH_VARARGS, "Check if the input position is indoor"},
-    {"hitNearest", (PyCFunction)HitNearest, METH_VARARGS, "Check the nearest hit distance"},
-    {"traceVolume", (PyCFunction)GetTracedVolume, METH_VARARGS, "Trace path loss volume"},
-    {"getId", (PyCFunction)GetID, METH_NOARGS, "Return ID of Tracer"},
     {NULL},
 };
 
-static PyMemberDef RayTracerMembers[] = {
-    {NULL}};
+static PyMemberDef RayTracerMembers[] = {{NULL}};
 
 static PyTypeObject RayTracerType = {
     PyVarObject_HEAD_INIT(NULL, 0) "core.Tracer", /* tp_name */
@@ -330,7 +183,7 @@ static PyTypeObject RayTracerType = {
 static PyModuleDef core_module = {
     PyModuleDef_HEAD_INIT,
     .m_name = "core",
-    .m_doc = "Core Tracer", // TODO[]: To be documented.
+    .m_doc = "Core",
     .m_size = -1,
 };
 
