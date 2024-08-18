@@ -22,11 +22,13 @@ static PyObject *GetDirectLoss(PyObject *self, PyObject *args)
     rxPos.y_ = (float)PyFloat_AsDouble(PyList_GetItem(rxPosObj, 1));
     rxPos.z_ = (float)PyFloat_AsDouble(PyList_GetItem(rxPosObj, 2));
 
+    float segmentDistance = Vec3::Distance(txPos, rxPos);
+
     std::vector<Vec3> points;
     points.push_back(txPos);
     points.push_back(rxPos);
 
-    return Py_BuildValue("f f", SegmentLoss(txPos, rxPos, txFreq), GetDelay(points, LIGHT_SPEED));
+    return Py_BuildValue("f f", SegmentLoss(segmentDistance, txFreq), GetDelay(points, LIGHT_SPEED));
 }
 
 static PyObject *GetDiffractionLoss(PyObject *self, PyObject *args)
@@ -71,7 +73,6 @@ static PyObject *GetDiffractionLoss(PyObject *self, PyObject *args)
 
 static PyObject *GetReflectionLoss(PyObject *self, PyObject *args)
 {
-
     PyObject *txPosObj;
     PyObject *rxPosObj;
     PyObject *refPosObj;
@@ -95,19 +96,23 @@ static PyObject *GetReflectionLoss(PyObject *self, PyObject *args)
     refPos.y_ = (float)PyFloat_AsDouble(PyList_GetItem(refPosObj, 1));
     refPos.z_ = (float)PyFloat_AsDouble(PyList_GetItem(refPosObj, 2));
 
-    std::vector<Vec3> points;
-    points.push_back(txPos);
-    points.push_back(refPos);
-    points.push_back(rxPos);
+    Record record;
+    record.type = RecordType::SingleReflected;
+    record.points = {txPos, refPos, rxPos};
+    record.refPosIndex = 1;  // refPos is at index 1 in points vector
 
-    return Py_BuildValue("f f", ReflectedPathLoss(txPos, rxPos, refPos, txFreq, matPerm), GetDelay(points, LIGHT_SPEED));
+    float loss = ReflectedPathLoss(record, txFreq, matPerm);
+    float delay = GetDelay(record.points, LIGHT_SPEED);
+
+    return Py_BuildValue("f f", loss, delay);
 }
 
 static PyMethodDef CalcFunctions[] = {
     {"directLoss", (PyCFunction)GetDirectLoss, METH_VARARGS, "Calculate Free Space Path Loss"},
     {"reflectLoss", (PyCFunction)GetReflectionLoss, METH_VARARGS, "Calculate Reflection Loss"},
     {"diffractLoss", (PyCFunction)GetDiffractionLoss, METH_VARARGS, "Calculate Diffraction Loss"},
-    {NULL}};
+    {NULL}
+};
 
 static PyModuleDef CalcModule = {
     PyModuleDef_HEAD_INIT,

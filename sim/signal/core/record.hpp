@@ -16,6 +16,7 @@ struct Record
 {
     RecordType type;
     std::vector<Vec3> points;
+    size_t refPosIndex;
 };
 
 #endif // !RECORD_H

@@ -19,12 +19,10 @@ def main():
         if isinstance(geometry, trimesh.Trimesh): meshes.append(geometry)
     mesh = trimesh.util.concatenate(meshes) if len(meshes) > 1 else meshes[0]  # single mesh
 
-    vertices, faces = mesh.vertices, mesh.faces # type: ignore
+    tracer = Tracer(mesh.vertices, mesh.faces) # type: ignore
 
-    tracer = Tracer()
-    tracer.load(vertices, faces)
+    a, b = [130, 70, 4], [110, 120, 2]
 
-    a, b = [100, 60, 16], [20, 90, 19]
 
     timer = Timer()
     result = tracer.trace(a, b)

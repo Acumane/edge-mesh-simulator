@@ -32,4 +32,4 @@ calc_module = Extension("bin.calc",
 
 setup(license="MIT", ext_modules=[core_module, calc_module])
 
-# python build.py build_ext --inplace
+# python build.py build_ext --inplace --force

@@ -3,12 +3,7 @@ from bin import core, calc
 
 class Tracer:
     DIM = 3
-    def __init__(self, scene=None):
-        self.core = None
-        if scene:
-            self.load(*read(scene))
-
-    def load(self, vertices, triangles):
+    def __init__(self, vertices, triangles):
         self.core = core.Tracer(vertices, triangles)
 
     def trace(self, a, b):

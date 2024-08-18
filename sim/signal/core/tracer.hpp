@@ -24,6 +24,8 @@ public:
     std::mutex mutex_;
     std::vector<std::vector<float> > volume_result_;
 
+    const int MAX_INTER = 4;
+
     Tracer(std::vector<Triangle *> &triangles) : id_(global_id++), triangles_(triangles)
     {
         scene_ = new BVH(triangles_);
@@ -52,18 +54,20 @@ public:
         Vec3 curPos = start;
         float totalDist = 0.0f;
         float distToEnd = Vec3::Distance(start, end);
+        int interCount = 0;
 
-        while (totalDist < distToEnd) {
+        while (interCount <= MAX_INTER && totalDist < distToEnd) {
             float hitDist = FLT_MAX;
             if (scene_->IsIntersect(ray, hitDist)) {
                 if (hitDist + totalDist < distToEnd) {
                     Vec3 hitPoint = ray.PositionAt(hitDist);
                     inters.push_back({hitPoint, totalDist + hitDist});
                     curPos = Vec3(hitPoint.x_ + direction.x_ * 0.001f,
-                                           hitPoint.y_ + direction.y_ * 0.001f,
-                                           hitPoint.z_ + direction.z_ * 0.001f);
+                                  hitPoint.y_ + direction.y_ * 0.001f,
+                                  hitPoint.z_ + direction.z_ * 0.001f);
                     ray = Ray(curPos, direction);
                     totalDist += hitDist + 0.001f;
+                    interCount++;
                 } else {
                     break;
                 }
@@ -72,7 +76,9 @@ public:
             }
         }
 
-        if (inters.empty() || Vec3::Distance(inters.back().position, end) > 0.001f) {
+        if (interCount > MAX_INTER) { return {}; }
+
+        if (inters.empty() || Vec3::Distance(inters.back().pos, end) > 0.001f) {
             inters.push_back({end, distToEnd});
         }
 
@@ -221,26 +227,18 @@ public:
         return pos + normal * 2 * t;
     }
 
-    std::vector<Record> Trace(Vec3 txPos, Vec3 rxPos)
+   std::vector<Record> Trace(Vec3 txPos, Vec3 rxPos)
     {
         std::vector<Record> records;
 
         // Trace -> Direct path
         std::vector<InterPoint> directPath = Penetrace(txPos, rxPos);
-        if (directPath.size() == 1) {
-            Record direct_record;
-            direct_record.type = RecordType::Direct;
-            records.push_back(direct_record);
+        Record direct_record;
+        direct_record.type = RecordType::Direct;
+        for (const auto &inter : directPath) {
+            direct_record.points.push_back(inter.pos);
         }
-        // Trace -> Diffracted path (broken)
-        else {
-          Record diffract_record;
-          diffract_record.type = RecordType::Diffracted;
-          for (const auto &inter : directPath) {
-            diffract_record.points.push_back(inter.pos);
-          }
-          records.push_back(diffract_record);
-        }
+        records.push_back(direct_record);
 
         // Trace -> Reflection
         for (Triangle *triangle : triangles_)
@@ -257,15 +255,23 @@ public:
 
             Vec3 point_on_triangle = mirror_point + direction_to_rx * (distance + 0.001f);
 
-            if (IsLOS(txPos, point_on_triangle) && IsLOS(rxPos, point_on_triangle))
-            {
-                Record reflect_record;
-                reflect_record.type = RecordType::SingleReflected;
-                reflect_record.points.push_back(point_on_triangle);
-                records.push_back(reflect_record);
-            }
-        }
+            std::vector<InterPoint> txToReflect = Penetrace(txPos, point_on_triangle);
+            if (txToReflect.empty()) { continue; }
+            std::vector<InterPoint> reflectToRx = Penetrace(point_on_triangle, rxPos);
+            if (reflectToRx.empty()) { continue; }
 
+            Record reflect_record;
+            reflect_record.type = RecordType::SingleReflected;
+            for (const auto &inter : txToReflect) {
+                reflect_record.points.push_back(inter.pos);
+            }
+            reflect_record.refPosIndex = reflect_record.points.size(); // Mark the index of the reflection point
+            reflect_record.points.push_back(point_on_triangle);
+            for (size_t i = 1; i < reflectToRx.size(); ++i) {
+                reflect_record.points.push_back(reflectToRx[i].pos);
+            }
+            records.push_back(reflect_record);
+        }
         return records;
     };
 
