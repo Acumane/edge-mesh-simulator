@@ -4,14 +4,12 @@
 #include <mutex>
 #include <vector>
 #include <math.h>
-#include <unordered_map>
 
 #include "record.hpp"
 #include "vec3.hpp"
 #include "triangle.hpp"
 #include "bvh.hpp"
-
-#include "calc.hpp"
+#include "loss.hpp"
 
 class Tracer
 {
@@ -62,18 +60,14 @@ public:
                 if (hitDist + totalDist < distToEnd) {
                     Vec3 hitPoint = ray.PositionAt(hitDist);
                     inters.push_back({hitPoint, totalDist + hitDist});
-                    curPos = Vec3(hitPoint.x_ + direction.x_ * 0.001f,
-                                  hitPoint.y_ + direction.y_ * 0.001f,
-                                  hitPoint.z_ + direction.z_ * 0.001f);
+                    curPos = Vec3(hitPoint.x_ + direction.x_ * 0.00001f,
+                                  hitPoint.y_ + direction.y_ * 0.00001f,
+                                  hitPoint.z_ + direction.z_ * 0.00001f);
                     ray = Ray(curPos, direction);
                     totalDist += hitDist + 0.001f;
                     interCount++;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
+                } else { break; } // too close to end
+            } else { break; } // miss
         }
 
         if (interCount > maxInter) { return {}; }
@@ -95,16 +89,18 @@ public:
     {
         std::vector<Record> records;
 
-        // Trace -> Direct path
+        // Direct path
         std::vector<InterPoint> directPath = Penetrace(txPos, rxPos);
         Record direct_record;
         direct_record.type = RecordType::Direct;
+        direct_record.points.push_back(txPos);
         for (const auto &inter : directPath) {
             direct_record.points.push_back(inter.pos);
         }
+        direct_record.refPosIndex = -1;  // no ref point
         records.push_back(direct_record);
 
-        // Trace -> Reflection
+        // Reflection
         for (Triangle *triangle : triangles_)
         {
             Vec3 mirror_point = GetMirrorPoint(txPos, triangle);
@@ -125,13 +121,13 @@ public:
 
             Record reflect_record;
             reflect_record.type = RecordType::SingleReflected;
+            reflect_record.points.push_back(txPos);
             for (const auto &inter : txToReflect) {
                 reflect_record.points.push_back(inter.pos);
             }
-            reflect_record.refPosIndex = reflect_record.points.size(); // Mark the index of the reflection point
-            reflect_record.points.push_back(point_on_triangle);
-            for (size_t i = 1; i < reflectToRx.size(); ++i) {
-                reflect_record.points.push_back(reflectToRx[i].pos);
+            reflect_record.refPosIndex = reflect_record.points.size() - 1;
+            for (const auto &inter : reflectToRx) {
+                reflect_record.points.push_back(inter.pos);
             }
             records.push_back(reflect_record);
         }

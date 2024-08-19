@@ -12,3 +12,5 @@ toml
 sortedcontainers
 pygraphviz
 trimesh
+pybind11
+pyfqmr

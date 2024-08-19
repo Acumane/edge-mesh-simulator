@@ -1,5 +1,5 @@
-#ifndef CALC_H
-#define CALC_H
+#ifndef LOSS_H
+#define LOSS_H
 
 #include <math.h>
 

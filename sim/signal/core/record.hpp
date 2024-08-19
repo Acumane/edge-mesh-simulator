@@ -6,7 +6,7 @@
 
 enum RecordType
 {
-    Direct = 0,
+    Direct = 1,
     SingleReflected = 2,
 };
 
@@ -14,7 +14,7 @@ struct Record
 {
     RecordType type;
     std::vector<Vec3> points;
-    size_t refPosIndex;
+    short int refPosIndex;
 };
 
 #endif // !RECORD_H

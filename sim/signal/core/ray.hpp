@@ -20,4 +20,4 @@ public:
         return origin_ + direction_ * distance;
     }
 };
-#endif // RAY_Hś
+#endif // RAY_H
