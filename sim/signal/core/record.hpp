@@ -7,7 +7,6 @@
 enum RecordType
 {
     Direct = 0,
-    Diffracted = 1,
     SingleReflected = 2,
 };
 

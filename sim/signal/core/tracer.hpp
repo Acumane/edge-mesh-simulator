@@ -24,7 +24,7 @@ public:
     std::mutex mutex_;
     std::vector<std::vector<float> > volume_result_;
 
-    const int MAX_INTER = 4;
+    static const int MAX_INTER = 50;
 
     Tracer(std::vector<Triangle *> &triangles) : id_(global_id++), triangles_(triangles)
     {
@@ -46,7 +46,7 @@ public:
         float dist;
     };
 
-    std::vector<InterPoint> Penetrace(const Vec3& start, const Vec3& end) {
+    std::vector<InterPoint> Penetrace(const Vec3& start, const Vec3& end, int maxInter = MAX_INTER) {
         std::vector<InterPoint> inters;
         Vec3 direction = Vec3(end.x_ - start.x_, end.y_ - start.y_, end.z_ - start.z_);
         direction.Normalize();
@@ -56,7 +56,7 @@ public:
         float distToEnd = Vec3::Distance(start, end);
         int interCount = 0;
 
-        while (interCount <= MAX_INTER && totalDist < distToEnd) {
+        while (interCount <= maxInter && totalDist < distToEnd) {
             float hitDist = FLT_MAX;
             if (scene_->IsIntersect(ray, hitDist)) {
                 if (hitDist + totalDist < distToEnd) {
@@ -76,7 +76,7 @@ public:
             }
         }
 
-        if (interCount > MAX_INTER) { return {}; }
+        if (interCount > maxInter) { return {}; }
         if (inters.empty() || Vec3::Distance(inters.back().pos, end) > 0.001f) {
             inters.push_back({end, distToEnd});
         }
@@ -118,9 +118,9 @@ public:
 
             Vec3 point_on_triangle = mirror_point + direction_to_rx * (distance + 0.001f);
 
-            std::vector<InterPoint> txToReflect = Penetrace(txPos, point_on_triangle);
+            std::vector<InterPoint> txToReflect = Penetrace(txPos, point_on_triangle, 4);
             if (txToReflect.empty()) { continue; }
-            std::vector<InterPoint> reflectToRx = Penetrace(point_on_triangle, rxPos);
+            std::vector<InterPoint> reflectToRx = Penetrace(point_on_triangle, rxPos, 4);
             if (reflectToRx.empty()) { continue; }
 
             Record reflect_record;

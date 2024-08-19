@@ -11,7 +11,16 @@ class Tracer:
         
         a, b = num.asarray(a, dtype=num.float32), num.asarray(b, dtype=num.float32)
         assert b.shape[0] == self.DIM and a.shape[0] == self.DIM
-        return self.core.trace(a, b)
+        raw_results = self.core.trace(a, b)
+        
+        processed_results = []
+        for result in raw_results:
+            if result[0] == 1:  # Direct path
+                processed_results.append([1])  # Now includes all intersection points
+            elif result[0] == 3:  # Reflected path
+                processed_results.append((3, result[1][result[2]]))
+        
+        return raw_results, processed_results
 
     @staticmethod
     def getLoss(a, b, results, freq=2.4e9, permittivity=5.31):

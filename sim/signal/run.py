@@ -21,13 +21,17 @@ def main():
 
     tracer = Tracer(mesh.vertices, mesh.faces) # type: ignore
 
-    a, b = [130, 70, 4], [110, 120, 2]
+    # a, b = [130, 100, 4], [110, 120, 2]
+    a, b = [120, 65, 4], [110, 120, 2]
+
 
 
     timer = Timer()
-    result = tracer.trace(a, b)
+    raw, result = tracer.trace(a, b)
     print(f"[{timer}] Tracing complete")
-    print("Trace result:", result)
+    print("Trace result:", raw)
+    print("Processed result:", result)
+
 
     freq = 2.4e9  # 2.4 GHz
     permittivity = 5.3  # Concrete

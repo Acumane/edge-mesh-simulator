@@ -22,8 +22,6 @@ def visualize(mesh: trimesh.Trimesh, tx_pos, rx_pos, paths: List):
         match kind:
             case 1:  # Direct
                 points, color = [tx_pos, rx_pos], [255, 255, 0, 255]
-            case 2:  # Diffracted
-                points, color = [tx_pos] + points[0] + [rx_pos], [255, 165, 0, 255]
             case 3:  # Reflected
                 points, color = [tx_pos, points[0], rx_pos], [255, 0, 0, 255]
             case _: continue
