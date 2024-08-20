@@ -40,7 +40,7 @@ PYBIND11_MODULE(signal, m) {
             return result;
         });
 
-    m.def("calcLoss", [](int type, py::list points, float freq, float perm, short int refIndex) {
+    m.def("calcLoss", [](int type, py::list points, short int refIndex, float freq, float perm) {
         std::vector<Vec3> path;
         for (auto point : points) {
             py::tuple t = point.cast<py::tuple>();
@@ -50,12 +50,11 @@ PYBIND11_MODULE(signal, m) {
         float loss, delay;
         if (type == 1) {
             loss = PathLoss(path, freq);
-            delay = GetDelay(path, LIGHT_SPEED);
+            delay = GetDelay(path);
         }
         else if (type == 2) {
-            Record record{RecordType::SingleReflected, path, refIndex};
-            loss = ReflectedPathLoss(record, freq, perm);
-            delay = GetDelay(path, LIGHT_SPEED);
+            loss = ReflectedPathLoss(path, refIndex, freq, perm);
+            delay = GetDelay(path);
         }
         return py::make_tuple(loss, delay);
     });

@@ -14,20 +14,14 @@
 class Tracer
 {
 public:
-    unsigned int id_;
-    static unsigned int global_id;
     BVH *scene_;
     std::vector<Triangle *> triangles_;
 
-    std::mutex mutex_;
-    std::vector<std::vector<float> > volume_result_;
-
     static const int MAX_INTER = 50;
 
-    Tracer(std::vector<Triangle *> &triangles) : id_(global_id++), triangles_(triangles)
+    Tracer(std::vector<Triangle *> &triangles) : triangles_(triangles)
     {
         scene_ = new BVH(triangles_);
-        volume_result_.clear();
     };
 
     ~Tracer()
@@ -36,7 +30,6 @@ public:
         for (Triangle *triangle : triangles_)
             delete triangle;
         triangles_.clear();
-        volume_result_.clear();
     };
 
     struct InterPoint {
@@ -134,7 +127,5 @@ public:
         return records;
     };
 };
-
-unsigned int Tracer::global_id = 0;
 
 #endif //!TRACER_H

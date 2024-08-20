@@ -5,56 +5,55 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <set>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "record.hpp"
 #include "vec3.hpp"
 
 #define LIGHT_SPEED 299792458.0f
 #define AIR_IOR 1.00029f  // Index of Refraction
+#define MAT_IOR 1.5f // Material refractive index
+#define MAT_A 30.0f // Material attenuation coeff (dB/m)
 
-static float GetDelay(std::vector<Vec3> points, float speed)
-{
-    float total_distance = 0.0f;
-    for (size_t i = 0; i < points.size() - 1; ++i)
-    {
-        total_distance += Vec3::Distance(points[i], points[i + 1]);
+// FSPL = (4πdf/c)^2 -> 20*log10(4πdf/c) in dB
+static float FSPL(float distance, float freq) {
+    return 20 * log10(distance) + 20 * log10(freq) - 147.55;
+}
+
+static float PathLoss(const std::vector<Vec3>& path, float txFreq, short int refIndex=-1) {
+    float effLen = 0.0, refLoss = 0.0;
+    size_t s = 0;
+
+    for (short int i = 0; i < path.size() - 1; ++i, ++s) {
+        float segmentDist = Vec3::Distance(path[i], path[i+1]);
+        if (i == refIndex) s++;
+
+        // presume: caster isn't inside obstacle & obstacles are closed
+        if (s % 2 == 0) effLen += segmentDist;
+        else effLen += (MAT_A * segmentDist); // obstacle
     }
-    return float(total_distance / speed);
+
+    return FSPL(effLen, txFreq);
 }
 
-static float SegmentLoss(float distance, float freq) {
-    return 20.0f * log10(distance) + 20.0f * log10(freq) - 147.55f;
-}
-
-static float ObstacleLoss(float distance, float freq) { // PLACEHOLDER
-    return 10.0f * distance * (freq / 1e9); // 10 dB per meter @ 1GHz, scaled w/ freq
-}
-
-static float PathLoss(const std::vector<Vec3>& path, float txFreq) {
-    float totalLoss = 0.0f;
-    float totalDistance = 0.0f;
+static float GetDelay(const std::vector<Vec3>& path) {
+    float time = 0.0;
 
     for (size_t i = 0; i < path.size() - 1; ++i) {
-        float segmentDistance = Vec3::Distance(path[i], path[i+1]);
-        totalDistance += segmentDistance;
+        float segmentDist = Vec3::Distance(path[i], path[i+1]);
 
-        if (i % 2 == 0) {
-            totalLoss += SegmentLoss(segmentDistance, txFreq);
-        } else {
-            totalLoss += ObstacleLoss(segmentDistance, txFreq);
-        }
+        if (i % 2 == 0) time += (segmentDist / LIGHT_SPEED) * AIR_IOR;
+        else time += (segmentDist / LIGHT_SPEED) * MAT_IOR; // Obstacle
+        // physical ray diffraction ignored for simplicity
     }
-
-    totalLoss += 20.0f * log10(totalDistance) + 20.0f * log10(txFreq) - 147.55f;
-
-    return totalLoss;
+    return time * 1e9; // ns
 }
 
-static float GetRefCoe(Vec3 txPos, Vec3 rxPos, Vec3 refPos, float matPerm, bool isTM)
-{
+static float GetRefCoe(Vec3 txPos, Vec3 rxPos, Vec3 refPos, float matPerm, bool isTM) {
     Vec3 refToTx = txPos - refPos;
     refToTx.Normalize();
     Vec3 refToRx = rxPos - refPos;
@@ -68,30 +67,22 @@ static float GetRefCoe(Vec3 txPos, Vec3 rxPos, Vec3 refPos, float matPerm, bool 
     float c1 = c / sqrt(n1);
     float c2 = c / sqrt(n2);
 
-    float angle_1 = Vec3::Angle(refToTx, refToRx) / 2.0f;
-    float angle_2 = asin(c2 * sin(angle_1) / c1);
+    float a1 = Vec3::Angle(refToTx, refToRx) / 2.0f;
+    float a2 = asin(c2 * sin(a1) / c1);
 
-    if (sqrt(abs(n1 / n2)) * sin(angle_1) >= 1)
-        return 1.0f;
+    if (sqrt(abs(n1 / n2)) * sin(a1) >= 1) return 1.0f;
 
-    float coe = (isTM) ? (sqrt(n2) * cos(angle_1) - sqrt(n1) * cos(angle_2)) /
-                            (sqrt(n2) * cos(angle_1) + sqrt(n1) * cos(angle_2))
-                       : (sqrt(n1) * cos(angle_1) - sqrt(n2) * cos(angle_2)) /
-                            (sqrt(n1) * cos(angle_1) + sqrt(n2) * cos(angle_2));
-    return coe;
+    return (isTM) ? (sqrt(n2) * cos(a1) - sqrt(n1) * cos(a2)) /
+                    (sqrt(n2) * cos(a1) + sqrt(n1) * cos(a2))
+                  : (sqrt(n1) * cos(a1) - sqrt(n2) * cos(a2)) /
+                    (sqrt(n1) * cos(a1) + sqrt(n2) * cos(a2));
 }
 
-static float ReflectedPathLoss(const Record& record, float txFreq, float matPerm) {
-    Vec3 txPos = record.points.front();
-    Vec3 rxPos = record.points.back();
-    Vec3 refPos = record.points[record.refPosIndex];
+static float ReflectedPathLoss(const std::vector<Vec3>& path, short int refIndex, float txFreq, float matPerm) {
+    float refCoeff = GetRefCoe(path.front(), path.back(), path[refIndex], matPerm, false);
+    float totalLoss = PathLoss(path, txFreq, refIndex);
 
-    float refCoeff = GetRefCoe(txPos, rxPos, refPos, matPerm, false); // assuming all rays are TE
-    float totalLoss = PathLoss(record.points, txFreq);
-
-    totalLoss -= 20.0f * log10(abs(refCoeff));
-
-    return totalLoss;
+    return totalLoss += 20 * -log10(abs(refCoeff));  // power reflection |Γ|^2
 }
 
 #endif

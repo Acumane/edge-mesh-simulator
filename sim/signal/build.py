@@ -8,7 +8,7 @@ signal = [
     Pybind11Extension("bin.signal",
         ["core/bind.cpp"],
         include_dirs=["core"],
-        extra_compile_args=["-std=c++17"]
+        extra_compile_args=["-std=c++17", "-O3"]
     ),
 ]
 
