@@ -11,6 +11,8 @@ uvicorn
 toml
 pygraphviz
 trimesh
+pybind11
+pyfqmr
 pika
 python-dotenv
 requests
