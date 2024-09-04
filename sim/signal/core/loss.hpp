@@ -5,11 +5,9 @@
 
 #include <algorithm>
 #include <cfloat>
-#include <cmath>
 #include <set>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 #include "record.hpp"
 #include "vec3.hpp"
@@ -28,9 +26,9 @@ static float PathLoss(const std::vector<Vec3>& path, float txFreq, short int ref
     float effLen = 0.0, refLoss = 0.0;
     size_t s = 0;
 
-    for (short int i = 0; i < path.size() - 1; ++i, ++s) {
+    for (size_t i = 0; i < path.size() - 1; ++i, ++s) {
         float segmentDist = Vec3::Distance(path[i], path[i+1]);
-        if (i == refIndex) s++;
+        if ((short int)i == refIndex) s++;
 
         // presume: caster isn't inside obstacle & obstacles are closed
         if (s % 2 == 0) effLen += segmentDist;
