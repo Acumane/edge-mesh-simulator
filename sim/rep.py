@@ -30,6 +30,9 @@ See main.py for usage
 class Coord:
     x: int; y: int; z: int
 
+    def asList(self):
+        return [self.x, self.y, self.z]
+
     def __iter__(self):
         return iter(astuple(self))
 

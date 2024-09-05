@@ -67,7 +67,6 @@ def build(cloud, out, callback):
 
     scene = trimesh.Scene(meshes) # type: ignore
 
-    callback(0.85, "Exporting")
     scene.export(f"{out}/scene.glb")
 
-    callback(1.0, "Finished")
+    callback(1.0, "Scene exported")

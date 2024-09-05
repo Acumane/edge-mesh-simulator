@@ -1,7 +1,7 @@
 import uuid
 from gen.proc import *
 from gen.place import *
-from sim.signal import *
+from sim.sig import *
 from sim import rep
 from gen.build import build
 from typing import *  # type: ignore
@@ -84,7 +84,7 @@ def main():
 
         def runSigStren():
             callback = lambda v, s=None, log=True: updateProgress("signal", v, s, log)
-            sigStren(rep.cloud, rep.STATE.instances, callback)
+            sigStren(rep.STATE.instances, callback)
 
         with ThreadPoolExecutor() as executor:
             futures = executor.submit(runBuild), executor.submit(runSigStren)
@@ -107,7 +107,7 @@ def lifetime():
         progress["lifetime"]["tick"] = tick
 
         callback = lambda v, s=None, log=False: updateProgress("signal", 1.1, s, False)
-        sigStren(rep.cloud, rep.STATE.instances, callback)
+        sigStren(rep.STATE.instances, callback)
         rep.STATE.tick()
         _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
 
