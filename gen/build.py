@@ -43,14 +43,30 @@ def march(cloud, callback):
 
     return vertices, faces, normals, colors
 
+def boundingBox(dim):
+    X, Y, Z = dim
+    vertices = [
+        (0, 0, 0), (X, 0, 0), (X, Y, 0), (0, Y, 0),
+        (0, 0, Z), (X, 0, Z), (X, Y, Z), (0, Y, Z)
+    ]
+    faces = [
+        [0, 1, 2, 3], [4, 5, 6, 7], [0, 4, 7, 3],
+        [1, 5, 6, 2], [0, 1, 5, 4], [3, 2, 6, 7]
+    ]
+    return trimesh.Trimesh(vertices, faces)
+
 def build(cloud, out, callback):
     callback(0.0, "Marching cubes")
-    march(cloud, lambda p: callback(p*0.8))
+    march(cloud, lambda p: callback(p*0.7))
 
-    callback(0.8, "Creating mesh")
-    mesh = trimesh.Trimesh(vertices, faces, vertex_normals=normals, vertex_colors=colors)
+    callback(0.7, "Creating mesh")
+    meshes = {
+        "main": trimesh.Trimesh(vertices, faces, vertex_normals=normals, vertex_colors=colors),
+        "bounds": boundingBox(cloud.shape)
+    }
 
-    callback(0.9, "Exporting")
-    mesh.export(f"{out}/scene.glb")
+    scene = trimesh.Scene(meshes) # type: ignore
 
-    callback(1.0, "Finished")
+    scene.export(f"{out}/scene.glb")
+
+    callback(1.0, "Scene exported")

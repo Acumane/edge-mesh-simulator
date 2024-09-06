@@ -19,11 +19,13 @@ export function loadFactory(): Promise<void> {
             sceneUrl,
             (gltf: any) => {
                 factoryGroup = gltf.scene
-                factoryGroup.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        child.material = new THREE.MeshStandardMaterial({ vertexColors: true })
-                        child.material.needsUpdate = true
-                        child.receiveShadow = true
+                factoryGroup.traverse((node) => {
+                    if (node instanceof THREE.Mesh) {
+                        node.material = new THREE.MeshStandardMaterial({ vertexColors: true })
+                        node.material.needsUpdate = true
+                        node.receiveShadow = true
+
+                        if (node.name === "bounds") node.visible = false
                     }
                 })
 

@@ -75,7 +75,7 @@ export function updateEdges() {
                 lines++
                 continue
             }
-            const stren = Math.min(cVals[a].hears[cVals[b].name], cVals[b].hears[cVals[a].name])
+            const stren = Math.min(cVals[a].hears[cVals[b].name].perc, cVals[b].hears[cVals[a].name].perc)
             if (stren > edgeThreshold) {
                 updateLine(lines, cVals[a], cVals[b], getLineColor(stren))
                 lines++

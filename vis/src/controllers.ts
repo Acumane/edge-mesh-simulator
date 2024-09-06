@@ -2,13 +2,20 @@ import * as THREE from "three"
 import { scene, COL } from "./setup"
 import { OFFSET } from "./factory"
 
+
+export interface Signal {
+    perc: number
+    dBm: number
+}
+
 export interface Controller {
     name: string
     comm: string
     pos: { x: number; y: number; z: number }
     orient: { roll: number; pitch: number; yaw: number }
     ip: string
-    hears: { [key: string]: number }
+    hears: { [key: string]: Signal }
+    bf: boolean
 }
 type Mesh = { [key: string]: Controller }
 export let controllers: Mesh = {}
@@ -25,7 +32,8 @@ function sendControllers(data: any): Mesh {
                 pos: item.pos,
                 orient: item.orient,
                 ip: item.ip,
-                hears: item.hears
+                hears: item.hears,
+                bf: item.bf
             }
             return acc
         }, {})

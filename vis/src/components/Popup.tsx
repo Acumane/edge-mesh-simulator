@@ -13,8 +13,8 @@ const Popup: Component<Popup> = ({ cur, pos }) => {
     if (!cur) return null
 
     const byStren = Object.entries(cur.hears)
-        .filter(([, value]) => value >= edgeThreshold)
-        .sort(([, a], [, b]) => b - a)
+        .filter(([, value]) => value.perc >= edgeThreshold)
+        .sort(([, a], [, b]) => b.perc - a.perc)
 
     return (
         <div
@@ -26,20 +26,20 @@ const Popup: Component<Popup> = ({ cur, pos }) => {
         >
             <h3 id="popup-title">{cur.name}</h3>
             <p id="popup-info">IP: {cur.ip}</p>
+            <p id="popup-info">{cur.bf ? "Beamformed" : "Omnidirectional"}</p>
             <div id="stren">
                 {byStren.map(([key, value]) => (
                     <div id="stren-item" key={key}>
-                        <span id="stren-perc">
-                            {key}: {value.toFixed(1)}%
-                        </span>
+                        <span>{key}: </span>
                         <div id="stren-bar">
                             <div
                                 id="stren-bar-fill"
                                 style={{
-                                    width: `${Math.min(value, 100)}%`
+                                    width: `${Math.min(value.perc, 100)}%`
                                 }}
                             />
                         </div>
+                        <span> {value.dBm.toFixed(2)} dBm</span>
                     </div>
                 ))}
             </div>

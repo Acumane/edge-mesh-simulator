@@ -30,6 +30,9 @@ See main.py for usage
 class Coord:
     x: int; y: int; z: int
 
+    def asList(self):
+        return [self.x, self.y, self.z]
+
     def __iter__(self):
         return iter(astuple(self))
 
@@ -69,13 +72,19 @@ class WiFi:
         }
 
 @define
+class Signal:
+    perc: float
+    dBm: float
+
+@define
 class Controller:
     name: str
     comm: BLE|Radio|WiFi
     pos: Coord
     orient: Rot
     ip: str = field()
-    hears: Dict[str, float] = default(dict)
+    hears: Dict[str, Signal] = default(dict)
+    bf: bool = True
 
     @ip.default # type: ignore
     def genIPv6(self) -> str:
@@ -88,7 +97,8 @@ class Controller:
             "pos": asdict(self.pos),
             "orient": asdict(self.orient),
             "ip": self.ip,
-            "hears": self.hears
+            "hears": {k: asdict(v) for k, v in self.hears.items()},
+            "bf": self.bf
         }
 
 @define
