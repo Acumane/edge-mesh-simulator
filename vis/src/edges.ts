@@ -40,7 +40,7 @@ export function updateEdges() {
     position.array.fill(0)
     for (let a = 0; a < cVals.length && lines < MAX_VERT; a++) {
         for (let b = a + 1; b < cVals.length && lines < MAX_VERT; b++) {
-            const stren = Math.min(cVals[a].hears[cVals[b].name], cVals[b].hears[cVals[a].name])
+            const stren = Math.max(cVals[a].hears[cVals[b].name].perc, cVals[b].hears[cVals[a].name].perc)
             if (stren > edgeThreshold) {
                 updateLine(lines, cVals[a], cVals[b], stren)
                 lines++

@@ -3,6 +3,7 @@ from math import exp, log10
 import numpy as num
 
 from sim.signal.bin import signal
+from sim.rep import Signal
 
 SCENE = "../vis/assets/scene.glb"
 
@@ -46,9 +47,18 @@ def calcSignal(cA, cB):
     best = sorted(paired, key=lambda x: x[1])[:5]
     res, losses, delays = zip(*best)
 
+
+
     # [(<loss (factor)>, <delay: ns>), ... ]
     recv = [power - loss for loss in losses]
-    return (cA.name, cB.name, omniSignal(recv, delays), power + bfGain - losses[0]) # (omni, bf)
+    omni_dBm = omniSignal(recv, delays)
+    bf_dBm = power + bfGain - losses[0]
+
+    return (
+        cA.name, cB.name, 
+        # TODO: when cA.bf != cB.bf
+        Signal(perc=recvStren(bf_dBm if cA.bf else omni_dBm), dBm=bf_dBm if cA.bf else omni_dBm)
+    )
 
 def sigStren(mesh, callback):
     callback(0.0, "Determining signal strength")
@@ -66,7 +76,7 @@ def sigStren(mesh, callback):
         progress = edge / n_edges
         callback(progress, "Determining signal strength", log=False)
 
-    for cA_name, cB_name, recvOmni, recvBf in connections:
-        mesh[cA_name].hears[cB_name] = mesh[cB_name].hears[cA_name] = max(recvStren(recvOmni), recvStren(recvBf))
+    for cA_name, cB_name, sig in connections:
+        mesh[cA_name].hears[cB_name] = mesh[cB_name].hears[cA_name] = sig
 
     callback(1.0, "Connections made", log=False)
