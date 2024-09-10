@@ -5,7 +5,7 @@ import numpy as num
 from sim.signal.bin import signal
 from sim.rep import Signal
 
-SCENE = "../vis/assets/scene.glb"
+SCENE = "vis/assets/scene.glb"
 
 def omniSignal(recv, delays): # multipath
     total = 0
