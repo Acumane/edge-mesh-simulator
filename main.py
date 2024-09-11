@@ -92,10 +92,11 @@ def main():
                 try: future.result()
                 except Exception: raise
 
+        print(f"[bright_yellow][{timer}][/]  Tick 0/{progress["lifetime"]["end"]}")
         lifetime()
 
     except Exception as e:
-        print(f"[bright_red][{timer}]  ERROR:[/] {e}", file=stderr)
+        print(f"[bright_red][{timer}]  {e.__class__.__name__}:[/] {e}", file=stderr)
     finally:
         plot.close()
 
@@ -103,7 +104,7 @@ def lifetime():
     global progress
     end = progress["lifetime"]["end"]
 
-    for tick in range(end + 1):
+    for tick in range(1, end + 1):
         progress["lifetime"]["tick"] = tick
 
         callback = lambda v, s=None, log=False: updateProgress("signal", 1.1, s, False)
@@ -111,7 +112,7 @@ def lifetime():
         rep.STATE.tick()
         _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
 
-        print(f"Tick: {tick}/{end}")
+        print(f"[bright_yellow][{timer}][/]  Tick {tick}/{end}")
 
 def on_message(message):
     global progress
@@ -123,7 +124,7 @@ def on_message(message):
                 _sendMessage("*.data", json.dumps(rep.STATE.getStates(rep.STATE.cur)), MQ_LOGS)
 
     except Exception as e:
-        print(f"Error processing message: {e}")
+        print(f"[bright_red][{timer}]  {e.__class__.__name__}:[/] {e}", file=stderr)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -162,10 +163,8 @@ def _sendMessage(key, msg, log=False):
         channel.basic.publish(exchange="edge-mesh", routing_key=key, body=msg)
         if log:
             print(f"{key} sent: {msg}")
-    except AMQPMessageError as e:
-        print(f"AMQPError occurred: {e}")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"[bright_red][{timer}]  {e.__class__.__name__}:[/] {e}", file=stderr)
 
 @app.get("/")
 def getRoot():
