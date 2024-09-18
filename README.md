@@ -1,15 +1,13 @@
 ## Edge Mesh Simulator 
 
 ### Setup
-Install dependencies:
-
-```sh
-pip install -r modules
-cd vis/
-[p]npm install
-```
-
-Executing `run.sh` starts the server at `localhost:8000`.
+- Install dependencies:
+	```sh
+	pip install -r modules
+	pnpm install --dir ./vis/ # OR npm install --prefix ./vis/ 
+	```
+- [Install docker engine](https://docs.docker.com/engine/install/) and compose
+- Run `rmq.sh`. Now, as a separate process, execute `run.sh`. The app should now be accessible on `localhost:8000`.
 
 ### Navigation
 
@@ -29,4 +27,12 @@ Executing `run.sh` starts the server at `localhost:8000`.
 
 Mouse - orbit/pan/zoom
 
+<kbd>[</kbd>,<kbd>]</kbd> - signal visibility threshold
+
 </td></tr></table>
+
+### Development
+- After making changes to the signal tracer:
+	```sh
+	cd ./sim/signal/ && python build.py build_ext --inplace --force
+	```
